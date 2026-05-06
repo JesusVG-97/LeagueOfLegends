@@ -71,9 +71,9 @@ client.on('message', async (channel, tags, message, self) => {
             if (!soloQ) return client.say(channel, "Sin rango o error de API.");
             
             const lpParaSubir = 100 - soloQ.leaguePoints;
-            const racha = soloQ.hotStreak ? "🔥 ¡Está on fire!" : "";
+            const racha = soloQ.hotStreak ? " ¡Está on fire!" : "";
             
-            client.say(channel, `${config.name} está en ${soloQ.tier} ${soloQ.rank} con ${soloQ.leaguePoints} LP. (Le faltan ${lpParaSubir} LP para los 100). ${racha}`);
+            client.say(channel, `${config.name} está en ${soloQ.tier} ${soloQ.rank} con ${soloQ.leaguePoints} LP. (Le faltan ${lpParaSubir} LP para subir de rango). ${racha}`);
         }
 
         // --- !STATS / !HOY ---
