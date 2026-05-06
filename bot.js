@@ -2,18 +2,16 @@ const tmi = require('tmi.js');
 const axios = require('axios');
 const express = require('express');
 
-// --- 1. MANTENER VIVO EN RENDER ---
 const app = express();
-app.get('/', (req, res) => res.send('Bot Multicanal Personalizado Online'));
+app.get('/', (req, res) => res.send('Bot LOL Session Tracker Online'));
 app.listen(process.env.PORT || 3000);
 
-// --- 2. CONFIGURACIÓN DE CUENTAS POR CANAL ---
+// --- CONFIGURACIÓN Y MEMORIA DE SESIÓN ---
 const streamerAccounts = {
-    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1" },
-    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1" },
+    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0 },
+    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0 },
 };
 
-// --- 3. CLIENTE DE TWITCH ---
 const client = new tmi.Client({
     options: { debug: true },
     identity: {
@@ -23,51 +21,95 @@ const client = new tmi.Client({
     channels: Object.keys(streamerAccounts) 
 });
 
+// Al conectar, guardamos los stats iniciales para calcular la sesión
+client.on('connected', async () => {
+    console.log('Bot conectado. Cargando stats iniciales de sesion...');
+    const riotKey = process.env.RIOT_API_KEY;
+    
+    for (let channel in streamerAccounts) {
+        try {
+            const config = streamerAccounts[channel];
+            const cluster = getCluster(config.region);
+            
+            const acc = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
+            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${acc.data.puuid}?api_key=${riotKey}`);
+            const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
+            
+            const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+            if (soloQ) {
+                streamerAccounts[channel].startWins = soloQ.wins;
+                streamerAccounts[channel].startLosses = soloQ.losses;
+            }
+        } catch (e) { console.error(`Error cargando sesion para ${channel}`); }
+    }
+});
+
 client.connect().catch(console.error);
 
-// --- 4. LÓGICA DE COMANDOS ---
 client.on('message', async (channel, tags, message, self) => {
     if (self) return;
 
     const command = message.toLowerCase().trim();
     const channelName = channel.replace('#', '').toLowerCase();
     const riotKey = process.env.RIOT_API_KEY;
-
     const config = streamerAccounts[channelName];
+
     if (!config) return; 
 
-    // Solo reacciona a !match o !lastmatch
-    if (command === '!match' || command === '!lastmatch') {
-        try {
-            const cluster = getCluster(config.region);
+    try {
+        const cluster = getCluster(config.region);
 
-            // 1. Obtener PUUID
-            const accountRes = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
-            const puuid = accountRes.data.puuid;
+        // --- COMANDO !SESSION (VICTORIAS/DERROTAS DEL DIA) ---
+        if (command === '!session' || command === '!hoy' || command === '!stats') {
+            const acc = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
+            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${acc.data.puuid}?api_key=${riotKey}`);
+            const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
+            const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
 
-            // 2. Obtener ID de la última partida
-            const historyRes = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1&api_key=${riotKey}`);
-            const matchId = historyRes.data[0];
+            if (!soloQ) return client.say(channel, "No hay datos de rankeds para hoy.");
 
-            if (!matchId) return client.say(channel, "No se encontraron partidas recientes.");
+            const currentWins = soloQ.wins - config.startWins;
+            const currentLosses = soloQ.losses - config.startLosses;
+            const totalSession = currentWins + currentLosses;
+            const wrSession = totalSession > 0 ? ((currentWins / totalSession) * 100).toFixed(1) : 0;
 
-            // 3. Obtener detalles de la partida
-            const matchRes = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotKey}`);
-            const p = matchRes.data.info.participants.find(part => part.puuid === puuid);
-
-            const winStatus = p.win ? 'VICTORIA' : 'DERROTA';
-            client.say(channel, `Ultima partida de ${config.name}: ${winStatus} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}.`);
-
-        } catch (error) {
-            console.error(`Error en canal ${channelName}:`, error.message);
-            if (error.response && error.response.status === 404) {
-                client.say(channel, `Error: No se encontro la cuenta de Riot ${config.name}#${config.tag}`);
-            }
+            client.say(channel, `Sesion de ${config.name}: ${currentWins}W - ${currentLosses}L (WR: ${wrSession}%).`);
         }
-    }
+
+        // --- COMANDO !MATCH (CON MULTIKILLS) ---
+        if (command === '!match' || command === '!lastmatch') {
+            const acc = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
+            const history = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${acc.data.puuid}/ids?start=0&count=1&api_key=${riotKey}`);
+            
+            if (!history.data[0]) return client.say(channel, "No hay partidas.");
+
+            const match = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}?api_key=${riotKey}`);
+            const p = match.data.info.participants.find(part => part.puuid === acc.data.puuid);
+
+            let multi = "";
+            if (p.pentaKills > 0) multi = "PENTAKILL! ";
+            else if (p.quadraKills > 0) multi = "QUADRAKILL! ";
+
+            const win = p.win ? 'VICTORIA' : 'DERROTA';
+            client.say(channel, `Ultima: ${win} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. ${multi}Dano/min: ${(p.totalDamageDealtToChampions/(match.data.info.gameDuration/60)).toFixed(0)}. Visio: ${p.visionScore}.`);
+        }
+
+        // --- COMANDO !RANK ---
+        if (command === '!rank' || command === '!elo') {
+            const acc = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
+            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${acc.data.puuid}?api_key=${riotKey}`);
+            const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
+            const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+
+            if (!soloQ) return client.say(channel, "Sin rango.");
+            
+            const racha = soloQ.hotStreak ? "En racha!" : "";
+            client.say(channel, `${config.name} esta en ${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP). ${racha}`);
+        }
+
+    } catch (e) { console.error("Error comando:", e.message); }
 });
 
-// --- FUNCIONES AUXILIARES ---
 function getCluster(region) {
     region = region.toLowerCase();
     if (['na1', 'br1', 'la1', 'la2'].includes(region)) return 'americas';
