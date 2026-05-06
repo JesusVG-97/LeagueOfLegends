@@ -71,10 +71,22 @@ client.on('message', async (channel, tags, message, self) => {
             const soloQ = await updateStats(channelName);
             if (!soloQ) return client.say(channel, "Sin rango o error de API.");
             
-            const lpParaSubir = 100 - soloQ.leaguePoints;
-            const racha = soloQ.hotStreak ? " ¡Está on fire!" : "";
-            
-            client.say(channel, `${config.name} está en ${soloQ.tier} ${soloQ.rank} con ${soloQ.leaguePoints} LP. (Le faltan ${lpParaSubir} LP para subir de rango). ${racha}`);
+            const tier = soloQ.tier; // MASTER, DIAMOND, etc.
+            const rank = soloQ.rank; // I, II, III...
+            const lp = soloQ.leaguePoints;
+            const racha = soloQ.hotStreak ? " 🔥 ¡Está on fire!" : "";
+
+            // Comprobamos si es Master, Grandmaster o Challenger
+            const isApex = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(tier.toUpperCase());
+
+            if (isApex) {
+                // Mensaje para Master+ (No hay divisiones ni límite de 100)
+                client.say(channel, `${config.name} está en ${tier} con ${lp} LP. ¡Está en el top regional!${racha}`);
+            } else {
+                // Mensaje para Hierro hasta Diamante
+                const lpParaSubir = 100 - lp;
+                client.say(channel, `${config.name} está en ${tier} ${rank} con ${lp} LP. (Faltan ${lpParaSubir} LP para los 100).${racha}`);
+            }
         }
 
         // --- !STATS / !HOY ---
