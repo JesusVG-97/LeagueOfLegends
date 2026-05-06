@@ -143,7 +143,7 @@ client.on('message', async (channel, tags, message, self) => {
                 const liveData = activeResponse.data;
                 const avgElo = await getAverageElo(liveData.participants, config.region);
                 const timeMinutes = Math.floor(liveData.gameLength / 60);
-                client.say(channel, "[PARTIDA ACTUAL] Elo medio: " + avgElo + ". Tiempo: " + (timeMinutes > 0 ? timeMinutes : 0) + " min. Usa !lastmatch para el historial");
+                client.say(channel, "[PARTIDA ACTUAL] Elo medio: " + avgElo + ". Tiempo: " + (timeMinutes > 0 ? timeMinutes : 0) + " min.");
             } catch (e) {
                 client.say(channel, config.name + " no esta en partida ahora mismo. Usa !lastmatch para la ultima finalizada");
             }
@@ -158,7 +158,7 @@ client.on('message', async (channel, tags, message, self) => {
             const avgEloText = await getAverageElo(info.participants, config.region);
             const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
-            client.say(channel, `[ULTIMA PARTIDA] (${avgEloText}): ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg}`);
+            client.say(channel, `[ULTIMA PARTIDA] (${avgEloText}): ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} vision: ${p.visio}`);
         }
 
     } catch (err) { console.error("Error", err.message); }
