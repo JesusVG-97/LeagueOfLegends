@@ -100,8 +100,7 @@ client.on('message', async (channel, tags, message, self) => {
             
             const win = p.win ? 'VICTORIA' : 'DERROTA';
             const dmg = (p.totalDamageDealtToChampions / (match.data.info.gameDuration / 60)).toFixed(0);
-            
-            client.say(channel, `Última partida: ${win} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists} | Daño/min: ${dmg}.`);
+            client.say(channel, `Última: ${win} con ${p.championName} (Nivel ${p.champLevel}). KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs}. Daño/min: ${dmg}. Oro: ${p.goldEarned} Vision: ${p.visionScore}.`);
         }
     } catch (err) { console.error("Error en comando:", err.message); }
 });
