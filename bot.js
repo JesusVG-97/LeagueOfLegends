@@ -98,7 +98,8 @@ client.on('message', async (channel, tags, message, self) => {
             
             const match = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}`);
             const p = match.data.info.participants.find(part => part.puuid === config.puuid);
-            
+
+            const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const win = p.win ? 'VICTORIA' : 'DERROTA';
             const dmg = (p.totalDamageDealtToChampions / (match.data.info.gameDuration / 60)).toFixed(0);
             client.say(channel, `Última: ${win} con ${p.championName} (Nivel ${p.champLevel}). KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs}. Daño/min: ${dmg}. Oro: ${p.goldEarned} Vision: ${p.visionScore}.`);
