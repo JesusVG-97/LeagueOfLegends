@@ -7,8 +7,8 @@ app.get('/', (req, res) => res.send('Bot LOL Online ✅'));
 app.listen(process.env.PORT || 3000);
 
 const streamerAccounts = {
-    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0, puuid: "" },
-    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, puuid: "" },
+    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, puuid: "" },
+    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, puuid: "" },
 };
 
 const processedMessages = new Set();
@@ -17,7 +17,6 @@ const client = new tmi.Client({
     channels: Object.keys(streamerAccounts)
 });
 
-// Usamos el Header X-Riot-Token que es más estable para Apps
 const riotRequest = axios.create({
     headers: { "X-Riot-Token": process.env.RIOT_API_KEY }
 });
@@ -26,17 +25,12 @@ async function updateStats(channel) {
     const config = streamerAccounts[channel];
     const cluster = getCluster(config.region);
     try {
-        // 1. Obtener PUUID si no lo tenemos
         if (!config.puuid) {
             const acc = await riotRequest.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}`);
             config.puuid = acc.data.puuid;
         }
-
-        // 2. Obtener Liga usando BY-PUUID (el método que tienes aprobado en la lista)
         const league = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${config.puuid}`);
-        const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
-        
-        return soloQ || null;
+        return league.data.find(l => l.queueType === 'RANKED_SOLO_5x5') || null;
     } catch (e) {
         console.error(`Error en API para ${channel}: ${e.message}`);
         return null;
@@ -50,6 +44,7 @@ client.on('connected', async () => {
         if (soloQ) {
             streamerAccounts[channel].startWins = soloQ.wins;
             streamerAccounts[channel].startLosses = soloQ.losses;
+            streamerAccounts[channel].startLP = soloQ.leaguePoints;
             console.log(`[OK] ${channel} inicializado.`);
         }
     }
@@ -70,28 +65,45 @@ client.on('message', async (channel, tags, message, self) => {
     try {
         const cluster = getCluster(config.region);
 
-        if (command === '!rank' || command === '!elo') {
+        // --- !RANK (Solo !rank, quitado !elo) ---
+        if (command === '!rank') {
             const soloQ = await updateStats(channelName);
             if (!soloQ) return client.say(channel, "Sin rango o error de API.");
-            client.say(channel, `${config.name} está en ${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP).`);
+            
+            const lpParaSubir = 100 - soloQ.leaguePoints;
+            const racha = soloQ.hotStreak ? "🔥 ¡Está on fire!" : "";
+            
+            client.say(channel, `${config.name} está en ${soloQ.tier} ${soloQ.rank} con ${soloQ.leaguePoints} LP. (Le faltan ${lpParaSubir} LP para los 100). ${racha}`);
         }
 
+        // --- !STATS / !HOY ---
         if (command === '!stats' || command === '!hoy') {
             const soloQ = await updateStats(channelName);
-            if (!soloQ) return client.say(channel, "No hay datos.");
+            if (!soloQ) return client.say(channel, "No hay datos disponibles.");
+            
             const w = soloQ.wins - config.startWins;
             const l = soloQ.losses - config.startLosses;
+            const lpDiff = soloQ.leaguePoints - config.startLP;
+            const lpSign = lpDiff >= 0 ? "+" : ""; // Para poner +20 o -20
+            
             const wr = (w + l) > 0 ? ((w / (w + l)) * 100).toFixed(0) : 0;
-            client.say(channel, `Hoy: ${w}W - ${l}L (WR: ${wr}%).`);
+            client.say(channel, `Hoy: ${w}W - ${l}L (${lpSign}${lpDiff} LP) | WR: ${wr}% | Partidas: ${w+l}`);
         }
 
-        if (command === '!match') {
+        // --- !MATCH ---
+        if (command === '!match' || command === '!lastmatch') {
             const history = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1`);
+            if (!history.data[0]) return client.say(channel, "No se encontraron partidas.");
+            
             const match = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}`);
             const p = match.data.info.participants.find(part => part.puuid === config.puuid);
-            client.say(channel, `Última: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName} (${p.kills}/${p.deaths}/${p.assists}).`);
+            
+            const win = p.win ? 'VICTORIA' : 'DERROTA';
+            const dmg = (p.totalDamageDealtToChampions / (match.data.info.gameDuration / 60)).toFixed(0);
+            
+            client.say(channel, `Última partida: ${win} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists} | Daño/min: ${dmg}.`);
         }
-    } catch (err) { console.error("Error:", err.message); }
+    } catch (err) { console.error("Error en comando:", err.message); }
 });
 
 function getCluster(region) {
