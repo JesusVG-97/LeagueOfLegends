@@ -6,10 +6,10 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot LOL Multi-Channel Online'));
 app.listen(process.env.PORT || 3000);
 
-// --- CONFIGURACIÓN (Nombres de canales en MINÚSCULAS para evitar doble mensaje) ---
+// --- CONFIGURACIÓN ---
 const streamerAccounts = {
-    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0 },
-    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0 },
+    "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0, puuid: "" },
+    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, puuid: "" },
 };
 
 const client = new tmi.Client({
@@ -21,23 +21,30 @@ const client = new tmi.Client({
     channels: Object.keys(streamerAccounts) 
 });
 
+// --- PRECARGA DE DATOS AL CONECTAR ---
 client.on('connected', async () => {
-    console.log('Bot conectado correctamente.');
+    console.log('Bot conectado. Precargando datos de Riot...');
     const riotKey = process.env.RIOT_API_KEY;
     
     for (let channel in streamerAccounts) {
         try {
             const config = streamerAccounts[channel];
             const cluster = getCluster(config.region);
+            
+            // Guardamos el PUUID aquí para que los comandos no fallen luego
             const acc = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
+            streamerAccounts[channel].puuid = acc.data.puuid;
+
             const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${acc.data.puuid}?api_key=${riotKey}`);
             const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
             const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+            
             if (soloQ) {
                 streamerAccounts[channel].startWins = soloQ.wins;
                 streamerAccounts[channel].startLosses = soloQ.losses;
+                console.log(`Datos iniciales listos para ${channel}`);
             }
-        } catch (e) { console.error(`Error inicializando ${channel}`); }
+        } catch (e) { console.error(`Error inicializando ${channel}: ${e.message}`); }
     }
 });
 
@@ -47,23 +54,18 @@ client.on('message', async (channel, tags, message, self) => {
     if (self) return;
 
     const command = message.toLowerCase().trim();
-    // Limpiamos el nombre del canal para que coincida siempre
     const channelName = channel.replace('#', '').toLowerCase();
     const config = streamerAccounts[channelName];
     const riotKey = process.env.RIOT_API_KEY;
 
-    if (!config) return;
+    if (!config || !config.puuid) return;
 
     try {
         const cluster = getCluster(config.region);
 
-        // 1. OBTENER PUUID (Común para todos los comandos)
-        const accRes = await axios.get(`https://${cluster}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(config.name)}/${encodeURIComponent(config.tag)}?api_key=${riotKey}`);
-        const puuid = accRes.data.puuid;
-
         // --- COMANDO !STATS / !HOY / !SESSION ---
         if (command === '!stats' || command === '!hoy' || command === '!session') {
-            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${puuid}?api_key=${riotKey}`);
+            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${config.puuid}?api_key=${riotKey}`);
             const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
             const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
 
@@ -76,8 +78,8 @@ client.on('message', async (channel, tags, message, self) => {
         }
 
         // --- COMANDO !RANK / !ELO ---
-        if (command === '!rank') {
-            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${puuid}?api_key=${riotKey}`);
+        if (command === '!rank' || command === '!elo') {
+            const summ = await axios.get(`https://${config.region}.api.riotgames.com/lol/summoner/v4/by-puuid/${config.puuid}?api_key=${riotKey}`);
             const league = await axios.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summ.data.id}?api_key=${riotKey}`);
             const soloQ = league.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
 
@@ -86,19 +88,19 @@ client.on('message', async (channel, tags, message, self) => {
             client.say(channel, `${config.name} esta en ${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP). ${racha}`);
         }
 
-        // --- COMANDO !MATCH / !LASTMATCH ---
+        // --- COMANDO !MATCH / !LASTMATCH (SIN CAMBIOS) ---
         if (command === '!match' || command === '!lastmatch') {
-            const history = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1&api_key=${riotKey}`);
+            const history = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1&api_key=${riotKey}`);
             if (!history.data[0]) return client.say(channel, "No hay partidas.");
 
             const match = await axios.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}?api_key=${riotKey}`);
-            const p = match.data.info.participants.find(part => part.puuid === puuid);
+            const p = match.data.info.participants.find(part => part.puuid === config.puuid);
             
             const win = p.win ? 'VICTORIA' : 'DERROTA';
             const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const dmg = (p.totalDamageDealtToChampions / (match.data.info.gameDuration / 60)).toFixed(0);
             
-            client.say(channel, `Ultima: ${win} con ${p.championName} (Nivel ${p.champLevel}). KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs}. Dano/min: ${dmg}. Oro: ${p.goldEarned}.`);
+            client.say(channel, `Ultima: ${win} con ${p.championName} (Nivel ${p.champLevel}). KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs}. Daño/min: ${dmg}. Oro: ${p.goldEarned} Vision: ${p.visionScore}.`);
         }
 
     } catch (error) {
