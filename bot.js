@@ -12,6 +12,9 @@ const streamerAccounts = {
     "uristylin": { name: "Uri Stylin", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
 };
 
+// Variable para controlar el cambio de día
+let lastResetDate = new Date().getDate();
+
 const processedMessages = new Set();
 const client = new tmi.Client({
     identity: { username: 'bot_node', password: process.env.TWITCH_TOKEN },
@@ -21,6 +24,30 @@ const client = new tmi.Client({
 const riotRequest = axios.create({
     headers: { "X-Riot-Token": process.env.RIOT_API_KEY }
 });
+
+// --- FUNCIONES CORE ---
+
+async function resetStatsIfNewDay() {
+    const now = new Date();
+    if (now.getDate() !== lastResetDate) {
+        console.log("Detectado cambio de dia. Reiniciando contadores de elo...");
+        lastResetDate = now.getDate();
+        for (let channel in streamerAccounts) {
+            const soloQ = await updateStats(channel);
+            if (soloQ) {
+                streamerAccounts[channel].startWins = soloQ.wins;
+                streamerAccounts[channel].startLosses = soloQ.losses;
+                streamerAccounts[channel].startLP = soloQ.leaguePoints;
+                streamerAccounts[channel].startTier = soloQ.tier;
+                streamerAccounts[channel].startRank = soloQ.rank;
+                console.log(`Reset completado para ${channel}`);
+            }
+        }
+    }
+}
+
+// Comprobar cada minuto si hay que resetear
+setInterval(resetStatsIfNewDay, 60000);
 
 function calculateTotalElo(tier, rank, lp) {
     const tierValue = { 'IRON': 0, 'BRONZE': 400, 'SILVER': 800, 'GOLD': 1200, 'PLATINUM': 1600, 'EMERALD': 2000, 'DIAMOND': 2400, 'MASTER': 2800, 'GRANDMASTER': 3200, 'CHALLENGER': 3600 };
@@ -86,6 +113,8 @@ async function updateStats(channel) {
     } catch (e) { return null; }
 }
 
+// --- EVENTOS ---
+
 client.on('connected', async () => {
     console.log('Bot conectado');
     for (let channel in streamerAccounts) {
@@ -142,10 +171,21 @@ client.on('message', async (channel, tags, message, self) => {
                 const activeResponse = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`);
                 const liveData = activeResponse.data;
                 const avgElo = await getAverageElo(liveData.participants, config.region);
-                const timeMinutes = Math.floor(liveData.gameLength / 60);
-                client.say(channel, "[PARTIDA ACTUAL] Elo medio: " + avgElo + ". Tiempo: " + (timeMinutes > 0 ? timeMinutes : 0) + " min.");
+                
+                let timeText = "";
+                if (liveData.gameLength < 0) {
+                    timeText = "Pantalla de carga";
+                } else {
+                    timeText = Math.floor(liveData.gameLength / 60) + " min";
+                }
+                
+                client.say(channel, "[PARTIDA ACTUAL] Elo medio: " + avgElo + ". Tiempo: " + timeText);
             } catch (e) {
-                client.say(channel, config.name + " no esta en partida ahora mismo. Usa !lastmatch para la ultima finalizada");
+                if (e.response && e.response.status === 404) {
+                    client.say(channel, config.name + " no esta en partida ahora mismo.");
+                } else {
+                    client.say(channel, "No se pudo obtener informacion de la partida actual.");
+                }
             }
         }
 
@@ -158,7 +198,7 @@ client.on('message', async (channel, tags, message, self) => {
             const avgEloText = await getAverageElo(info.participants, config.region);
             const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
-            client.say(channel, `[ULTIMA PARTIDA] (${avgEloText}): ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} vision: ${p.visionScore}`);
+            client.say(channel, `[ULTIMA PARTIDA] Media de la partida: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
 
     } catch (err) { console.error("Error", err.message); }
