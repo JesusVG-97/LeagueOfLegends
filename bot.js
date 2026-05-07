@@ -212,6 +212,24 @@ client.on('message', async (channel, tags, message, self) => {
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
             client.say(channel, `MEDIA: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
+        if (command === '!insulto') {
+            const poolInsultos = [
+                "eres más lento que un Nautilus con lag.",
+                "tienes menos puntería que un Minion.",
+                "¿tu teclado solo tiene la tecla de morir?",
+                "eres más inútil que el flash de un Shaco.",
+                "hasta el Escurridizo del río farmea mejor que tú.",
+                "tu KDA parece el número de emergencias.",
+                "te falta más visión que a Lee Sin.",
+                "eres el motivo por el cual el surrender existe."
+            ];
+
+            // Seleccionamos uno al azar
+            const insultoRandom = poolInsultos[Math.floor(Math.random() * poolInsultos.length)];
+            // Si quieres que mencione a alguien específico: !insulto @usuario
+            const target = message.split(' ')[1] || tags['display-name'];
+            client.say(channel, `${target}, ${insultoRandom}`);
+        }
 
     } catch (err) { console.error("Error", err.message); }
 });
