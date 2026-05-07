@@ -198,7 +198,7 @@ client.on('message', async (channel, tags, message, self) => {
             const avgEloText = await getAverageElo(info.participants, config.region);
             const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
-            client.say(channel, `[ULTIMA PARTIDA] Media de la partida: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
+            client.say(channel, `Media del elo: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
 
     } catch (err) { console.error("Error", err.message); }
