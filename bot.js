@@ -168,15 +168,16 @@ client.on('message', async (channel, tags, message, self) => {
 
        if (command === '!match') {
             try {
-                // Forzamos que la región sea la correcta del config
-                const region = config.region.toLowerCase();
-                
-                // IMPORTANTE: La URL debe llevar /by-puuid/
-                const url = `https://${region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`;
+                // Si no tenemos PUUID, intentamos actualizar
+                if (!config.puuid) await updateStats(channelName);
+
+                // LA RUTA CORRECTA SEGÚN LA DOCS: /by-summoner/ seguido del PUUID
+                const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
                 
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
+                // Calculamos el elo promedio
                 const avgElo = await getAverageElo(liveData.participants, config.region);
                 
                 let timeText = (liveData.gameLength < 0) ? "Pantalla de carga" : Math.floor(liveData.gameLength / 60) + " min";
@@ -187,9 +188,8 @@ client.on('message', async (channel, tags, message, self) => {
                 if (e.response && e.response.status === 404) {
                     client.say(channel, `${config.name} no esta en partida ahora mismo.`);
                 } else {
-                    // Si sale 403 aquí, es que tu API KEY de Riot no tiene permisos para Spectator-v5
-                    // (Asegúrate de haber aceptado los términos en el portal de Riot)
-                    console.error("Error técnico en !match:", e.response ? e.response.status : e.message);
+                    // Imprime el error exacto en consola para que lo veas
+                    console.error("Error Spectator:", e.response ? e.response.status : e.message);
                     client.say(channel, "No se pudo obtener informacion de la partida actual.");
                 }
             }
