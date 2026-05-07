@@ -166,13 +166,17 @@ client.on('message', async (channel, tags, message, self) => {
             client.say(channel, `Hoy: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) | WR: ${wr}%`);
         }
 
-        if (command === '!match') {
+       if (command === '!match') {
             try {
-                const url = `https://${config.region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`;
+                // Forzamos que la región sea la correcta del config
+                const region = config.region.toLowerCase();
+                
+                // IMPORTANTE: La URL debe llevar /by-puuid/
+                const url = `https://${region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`;
+                
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
-                // Si llegamos aquí, hay partida. Calculamos el Elo.
                 const avgElo = await getAverageElo(liveData.participants, config.region);
                 
                 let timeText = (liveData.gameLength < 0) ? "Pantalla de carga" : Math.floor(liveData.gameLength / 60) + " min";
@@ -180,24 +184,14 @@ client.on('message', async (channel, tags, message, self) => {
                 client.say(channel, `[PARTIDA ACTUAL] Elo medio: ${avgElo}. Tiempo: ${timeText}`);
 
             } catch (e) {
-                // ESTO ES PARA TI: Mira la consola para saber qué pasa
-                if (e.response) {
-                    console.log(`Error Riot API (${e.response.status}): ${e.response.data.status.message}`);
-                    
-                    if (e.response.status === 404) {
-                        return client.say(channel, `${config.name} no esta en partida ahora mismo.`);
-                    }
-                    if (e.response.status === 403) {
-                        return client.say(channel, "Error: La API Key de Riot ha caducado.");
-                    }
-                    if (e.response.status === 429) {
-                        return client.say(channel, "Demasiadas peticiones. Espera un momento.");
-                    }
+                if (e.response && e.response.status === 404) {
+                    client.say(channel, `${config.name} no esta en partida ahora mismo.`);
                 } else {
-                    console.log("Error de conexión o de código:", e.message);
+                    // Si sale 403 aquí, es que tu API KEY de Riot no tiene permisos para Spectator-v5
+                    // (Asegúrate de haber aceptado los términos en el portal de Riot)
+                    console.error("Error técnico en !match:", e.response ? e.response.status : e.message);
+                    client.say(channel, "No se pudo obtener informacion de la partida actual.");
                 }
-                
-                client.say(channel, "No se pudo obtener informacion de la partida actual.");
             }
         }
 
@@ -223,13 +217,10 @@ client.on('message', async (channel, tags, message, self) => {
                 "te falta más visión que a Lee Sin.",
                 "eres el motivo por el cual el surrender existe."
             ];
-
             const insultoRandom = poolInsultos[Math.floor(Math.random() * poolInsultos.length)];
-            
             // Lógica de objetivo:
             const args = message.split(' ');
             let target;
-
             if (args.length > 1) {
                 // Si hay algo después del comando (ej: !insulto @pepe)
                 target = args[1]; 
@@ -237,7 +228,6 @@ client.on('message', async (channel, tags, message, self) => {
                 // Si no hay nada, el objetivo es el streamer (nombre del canal)
                 target = `@${channelName}`; 
             }
-
             client.say(channel, `${target}, ${insultoRandom}`);
         }
 
