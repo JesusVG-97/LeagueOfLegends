@@ -212,7 +212,7 @@ client.on('message', async (channel, tags, message, self) => {
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
             client.say(channel, `MEDIA: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
-        if (command === '!insulto') {
+        if (command.startsWith('!insulto')) {
             const poolInsultos = [
                 "eres más lento que un Nautilus con lag.",
                 "tienes menos puntería que un Minion.",
@@ -224,10 +224,20 @@ client.on('message', async (channel, tags, message, self) => {
                 "eres el motivo por el cual el surrender existe."
             ];
 
-            // Seleccionamos uno al azar
             const insultoRandom = poolInsultos[Math.floor(Math.random() * poolInsultos.length)];
-            // Si quieres que mencione a alguien específico: !insulto @usuario
-            const target = message.split(' ')[1] || tags['display-name'];
+            
+            // Lógica de objetivo:
+            const args = message.split(' ');
+            let target;
+
+            if (args.length > 1) {
+                // Si hay algo después del comando (ej: !insulto @pepe)
+                target = args[1]; 
+            } else {
+                // Si no hay nada, el objetivo es el streamer (nombre del canal)
+                target = `@${channelName}`; 
+            }
+
             client.say(channel, `${target}, ${insultoRandom}`);
         }
 
