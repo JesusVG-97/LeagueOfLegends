@@ -168,24 +168,36 @@ client.on('message', async (channel, tags, message, self) => {
 
         if (command === '!match') {
             try {
-                const activeResponse = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`);
+                const url = `https://${config.region}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${config.puuid}`;
+                const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
+
+                // Si llegamos aquí, hay partida. Calculamos el Elo.
                 const avgElo = await getAverageElo(liveData.participants, config.region);
                 
-                let timeText = "";
-                if (liveData.gameLength < 0) {
-                    timeText = "Pantalla de carga";
+                let timeText = (liveData.gameLength < 0) ? "Pantalla de carga" : Math.floor(liveData.gameLength / 60) + " min";
+                
+                client.say(channel, `[PARTIDA ACTUAL] Elo medio: ${avgElo}. Tiempo: ${timeText}`);
+
+            } catch (e) {
+                // ESTO ES PARA TI: Mira la consola para saber qué pasa
+                if (e.response) {
+                    console.log(`Error Riot API (${e.response.status}): ${e.response.data.status.message}`);
+                    
+                    if (e.response.status === 404) {
+                        return client.say(channel, `${config.name} no esta en partida ahora mismo.`);
+                    }
+                    if (e.response.status === 403) {
+                        return client.say(channel, "Error: La API Key de Riot ha caducado.");
+                    }
+                    if (e.response.status === 429) {
+                        return client.say(channel, "Demasiadas peticiones. Espera un momento.");
+                    }
                 } else {
-                    timeText = Math.floor(liveData.gameLength / 60) + " min";
+                    console.log("Error de conexión o de código:", e.message);
                 }
                 
-                client.say(channel, "[PARTIDA ACTUAL] Elo medio: " + avgElo + ". Tiempo: " + timeText);
-            } catch (e) {
-                if (e.response && e.response.status === 404) {
-                    client.say(channel, config.name + " no esta en partida ahora mismo.");
-                } else {
-                    client.say(channel, "No se pudo obtener informacion de la partida actual.");
-                }
+                client.say(channel, "No se pudo obtener informacion de la partida actual.");
             }
         }
 
@@ -198,7 +210,7 @@ client.on('message', async (channel, tags, message, self) => {
             const avgEloText = await getAverageElo(info.participants, config.region);
             const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
-            client.say(channel, `Media del elo: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
+            client.say(channel, `MEDIA: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
 
     } catch (err) { console.error("Error", err.message); }
