@@ -6,16 +6,20 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot LOL Online'));
 app.listen(process.env.PORT || 3000);
 
+// --- MAPEO DE CAMPEONES (ACTUALIZADO HASTA AMBESSA) ---
+const champMap = {
+    1: "Annie", 2: "Olaf", 3: "Galio", 4: "Twisted Fate", 5: "Xin Zhao", 6: "Urgot", 7: "LeBlanc", 8: "Vladimir", 9: "Fiddlesticks", 10: "Kayle", 11: "Master Yi", 12: "Alistar", 13: "Ryze", 14: "Sion", 15: "Sivir", 16: "Soraka", 17: "Teemo", 18: "Tristana", 19: "Warwick", 20: "Nunu", 21: "Miss Fortune", 22: "Ashe", 23: "Tryndamere", 24: "Jax", 25: "Morgana", 26: "Zilean", 27: "Singed", 28: "Evelynn", 29: "Twitch", 30: "Karthus", 31: "Cho'Gath", 32: "Amumu", 33: "Rammus", 34: "Anivia", 35: "Shaco", 36: "Dr. Mundo", 37: "Sona", 38: "Kassadin", 39: "Irelia", 40: "Janna", 41: "Gangplank", 42: "Corki", 43: "Karma", 44: "Taric", 45: "Veigar", 48: "Trundle", 50: "Swain", 51: "Caitlyn", 53: "Blitzcrank", 54: "Malphite", 55: "Katarina", 56: "Nocturne", 57: "Maokai", 58: "Renekton", 59: "Jarvan IV", 60: "Elise", 61: "Orianna", 62: "Wukong", 63: "Brand", 64: "Lee Sin", 67: "Vayne", 68: "Rumble", 69: "Cassiopeia", 72: "Skarner", 74: "Heimerdinger", 75: "Nasus", 76: "Nidalee", 77: "Udyr", 78: "Poppy", 79: "Gragas", 80: "Pantheon", 81: "Ezreal", 82: "Mordekaiser", 83: "Yorick", 84: "Akali", 85: "Kennen", 86: "Garen", 89: "Leona", 90: "Malzahar", 91: "Talon", 92: "Riven", 96: "Kog'Maw", 98: "Shen", 99: "Lux", 101: "Xerath", 102: "Shyvana", 103: "Ahri", 104: "Graves", 105: "Fizz", 106: "Volibear", 107: "Rengar", 110: "Varus", 111: "Nautilus", 112: "Viktor", 113: "Sejuani", 114: "Fiora", 115: "Ziggs", 117: "Lulu", 119: "Draven", 120: "Hecarim", 121: "Khazix", 122: "Darius", 126: "Jayce", 127: "Lissandra", 131: "Diana", 133: "Quinn", 134: "Syndra", 136: "Aurelion Sol", 141: "Kayn", 142: "Zoe", 143: "Zyra", 145: "Kaisa", 147: "Seraphine", 150: "Gnar", 154: "Zac", 157: "Yasuo", 161: "Velkoz", 163: "Taliyah", 164: "Camille", 166: "Akshan", 200: "Belveth", 201: "Braum", 202: "Jhin", 203: "Kindred", 221: "Zeri", 222: "Jinx", 223: "Tahm Kench", 233: "Briar", 234: "Viego", 235: "Senna", 236: "Lucian", 238: "Zed", 240: "Kled", 245: "Ekko", 246: "Qiyana", 254: "Vi", 266: "Aatrox", 267: "Nami", 268: "Azir", 350: "Yuumi", 360: "Samira", 412: "Thresh", 420: "Illaoi", 421: "RekSai", 427: "Ivern", 429: "Kalista", 432: "Bard", 497: "Rakan", 498: "Xayah", 516: "Ornn", 517: "Sylas", 518: "Neeko", 523: "Aphelios", 526: "Rell", 555: "Pyke", 711: "Vex", 777: "Yone", 799: "Smolder", 875: "Sett", 876: "Lillia", 887: "Gwen", 888: "Renata", 895: "Nilah", 897: "KSante", 901: "Hwei", 902: "Milio", 910: "Hwei", 950: "Naafiri", 1000: "Ambessa"
+};
+
 const streamerAccounts = {
     "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
     "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
     "uristylin": { name: "Uri Stylin", tag: "EUW", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
 };
 
-// Variable para controlar el cambio de día
 let lastResetDate = new Date().getDate();
-
 const processedMessages = new Set();
+
 const client = new tmi.Client({
     identity: { username: 'bot_node', password: process.env.TWITCH_TOKEN },
     channels: Object.keys(streamerAccounts)
@@ -30,7 +34,6 @@ const riotRequest = axios.create({
 async function resetStatsIfNewDay() {
     const now = new Date();
     if (now.getDate() !== lastResetDate) {
-        console.log("Detectado cambio de dia. Reiniciando contadores de elo...");
         lastResetDate = now.getDate();
         for (let channel in streamerAccounts) {
             const soloQ = await updateStats(channel);
@@ -40,13 +43,10 @@ async function resetStatsIfNewDay() {
                 streamerAccounts[channel].startLP = soloQ.leaguePoints;
                 streamerAccounts[channel].startTier = soloQ.tier;
                 streamerAccounts[channel].startRank = soloQ.rank;
-                console.log(`Reset completado para ${channel}`);
             }
         }
     }
 }
-
-// Comprobar cada minuto si hay que resetear
 setInterval(resetStatsIfNewDay, 60000);
 
 function calculateTotalElo(tier, rank, lp) {
@@ -102,6 +102,7 @@ function getCluster(region) {
 
 async function updateStats(channel) {
     const config = streamerAccounts[channel];
+    if (!config) return null;
     const cluster = getCluster(config.region);
     try {
         if (!config.puuid) {
@@ -166,29 +167,47 @@ client.on('message', async (channel, tags, message, self) => {
             client.say(channel, `Hoy: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) | WR: ${wr}%`);
         }
 
-       if (command === '!match') {
+        if (command === '!match') {
             try {
-                // Si no tenemos PUUID, intentamos actualizar
                 if (!config.puuid) await updateStats(channelName);
 
-                // LA RUTA CORRECTA SEGÚN LA DOCS: /by-summoner/ seguido del PUUID
                 const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
-                
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
-                // Calculamos el elo promedio
+                // Mapeo de Runas Clave
+                const keystones = { 
+                    8005: "PTA", 8008: "Lethal Tempo", 8010: "Conqueror", 8021: "Fleet",
+                    8112: "Electrocute", 8124: "Predator", 8128: "Dark Harvest", 9923: "Hail of Blades",
+                    8214: "Aery", 8229: "Arcane Comet", 8230: "Phase Rush",
+                    8437: "Grasp", 8439: "Aftershock", 8465: "Guardian",
+                    8351: "Glacial", 8360: "Unsealed Spellbook", 8369: "First Strike"
+                };
+
+                const me = liveData.participants.find(p => p.puuid === config.puuid);
+                const champName = champMap[me.championId] || `ID: ${me.championId}`;
+                const myKeystone = keystones[me.perks.perkIds[0]] || "Runa";
                 const avgElo = await getAverageElo(liveData.participants, config.region);
                 
-                let timeText = (liveData.gameLength < 0) ? "Pantalla de carga" : Math.floor(liveData.gameLength / 60) + " min";
-                
-                client.say(channel, `[PARTIDA ACTUAL] Elo medio: ${avgElo}. Tiempo: ${timeText}`);
+                const aliados = liveData.participants
+                    .filter(p => p.teamId === me.teamId && p.puuid !== me.puuid)
+                    .map(p => p.riotIdGameName || "Anon")
+                    .join(", ");
+
+                const rivales = liveData.participants
+                    .filter(p => p.teamId !== me.teamId)
+                    .map(p => p.riotIdGameName || "Anon")
+                    .join(", ");
+
+                let timeText = (liveData.gameLength < 0) ? "Cargando" : Math.floor(liveData.gameLength / 60) + "m";
+
+                client.say(channel, `[PARTIDA] ${config.name} con ${champName} (${myKeystone}) | Elo Medio: ${avgElo} | Tiempo: ${timeText}`);
+                client.say(channel, `Aliados: ${aliados} VS Rivales: ${rivales}`);
 
             } catch (e) {
                 if (e.response && e.response.status === 404) {
                     client.say(channel, `${config.name} no esta en partida ahora mismo.`);
                 } else {
-                    // Imprime el error exacto en consola para que lo veas
                     console.error("Error Spectator:", e.response ? e.response.status : e.message);
                     client.say(channel, "No se pudo obtener informacion de la partida actual.");
                 }
@@ -206,6 +225,7 @@ client.on('message', async (channel, tags, message, self) => {
             const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
             client.say(channel, `MEDIA: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
         }
+
         if (command.startsWith('!insulto')) {
             const poolInsultos = [
                 "eres más lento que un Nautilus con lag.",
@@ -218,16 +238,8 @@ client.on('message', async (channel, tags, message, self) => {
                 "eres el motivo por el cual el surrender existe."
             ];
             const insultoRandom = poolInsultos[Math.floor(Math.random() * poolInsultos.length)];
-            // Lógica de objetivo:
             const args = message.split(' ');
-            let target;
-            if (args.length > 1) {
-                // Si hay algo después del comando (ej: !insulto @pepe)
-                target = args[1]; 
-            } else {
-                // Si no hay nada, el objetivo es el streamer (nombre del canal)
-                target = `@${channelName}`; 
-            }
+            let target = args[1] ? args[1] : `@${config.name}`;
             client.say(channel, `${target}, ${insultoRandom}`);
         }
 
