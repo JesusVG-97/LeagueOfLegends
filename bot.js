@@ -219,13 +219,42 @@ client.on('message', async (channel, tags, message, self) => {
                 const liveData = activeResponse.data;
 
                 // Mapeo rápido para el prefijo de runas en !match
-                const runasMapShort = {
-                    8000: "Precisión", 8100: "Dom", 8200: "Brujería", 8300: "Insp", 8400: "Valor",
-                    8005: "PTA", 8008: "Lethal", 8010: "Conq", 8021: "Fleet", 8112: "Electro",
-                    8124: "Predator", 8128: "DH", 9923: "HoB", 8214: "Aery", 8229: "Cometa",
-                    8230: "Fase", 8437: "Garras", 8439: "Aftershock", 8351: "Glacial", 8360: "Libro", 8369: "FirstStrike"
-                };
+              const runasMapShort = {
+    // --- RAMAS PRINCIPALES ---
+    8000: "Precisión", 
+    8100: "Dominación", 
+    8200: "Brujería", 
+    8300: "Inspiración", 
+    8400: "Valor",
 
+    // --- RUNAS CLAVE ---
+    // Precisión
+    8005: "Ataque Intensificado", 
+    8008: "Compás Letal", 
+    8010: "Conquistador", 
+    8021: "Sobre la Marcha", 
+    
+    // Dominación
+    8112: "Electrocutar", 
+    8124: "Depredador", 
+    8128: "Cosecha Oscura", 
+    9923: "Lluvia de Cuchillas", 
+    
+    // Brujería
+    8214: "Invocar a Aery", 
+    8229: "Cometa Arcano", 
+    8230: "Irrupción de Fase", 
+    
+    // Valor
+    8437: "Garras del Inmortal", 
+    8439: "Reverberación", 
+    8465: "Protector", 
+    
+    // Inspiración
+    8351: "Aumento Glacial", 
+    8360: "Libro de Hechizos", 
+    8369: "Primer Golpe"
+};
                 const me = liveData.participants.find(p => p.puuid === config.puuid);
                 const runasResumen = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
 
