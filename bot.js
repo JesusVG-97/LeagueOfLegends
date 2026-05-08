@@ -99,21 +99,11 @@ function eloToText(totalElo) {
     return `${tier.name} ${rank.n}`;
 }
 
-async function getAverageElo(participants, region) {
-    try {
-        const promises = participants.map(p => 
-            riotRequest.get(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid || p.summonerId}`)
-            .catch(() => ({ data: [] }))
-        );
-        const results = await Promise.all(promises);
-        const elos = results.map(res => {
-            const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
-            return soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null;
-        }).filter(val => val !== null);
-        if (elos.length === 0) return "Desconocido";
-        const avg = elos.reduce((a, b) => a + b, 0) / elos.length;
-        return eloToText(avg);
-    } catch (e) { return "Error"; }
+function calculateAvgFromElos(elos) {
+    if (!elos || elos.length === 0) return "Desconocido";
+    const sum = elos.reduce((a, b) => a + b, 0);
+    const avg = sum / elos.length;
+    return eloToText(avg);
 }
 
 function getNextRank(rank) {
@@ -211,68 +201,53 @@ client.on('message', async (channel, tags, message, self) => {
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
-                // 1. Diccionario de Runas (Clave + Secundaria)
-                const runasMap = {
-                    8000: "Precisión", 8100: "Dominación", 8200: "Brujería", 8300: "Inspiración", 8400: "Valor",
-                    8005: "PTA", 8008: "Lethal Tempo", 8010: "Conqueror", 8021: "Fleet",
-                    8112: "Electrocute", 8124: "Predator", 8128: "Dark Harvest", 9923: "HoB",
-                    8214: "Aery", 8229: "Cometa", 8230: "Fase", 8437: "Garras", 8439: "Aftershock",
-                    8351: "Glacial", 8360: "Libro", 8369: "First Strike"
+                const runasMapShort = {
+                    8000: "Precisión", 8100: "Dom", 8200: "Brujería", 8300: "Insp", 8400: "Valor",
+                    8005: "PTA", 8008: "Lethal", 8010: "Conq", 8021: "Fleet", 8112: "Electro",
+                    8124: "Predator", 8128: "DH", 9923: "HoB", 8214: "Aery", 8229: "Cometa",
+                    8230: "Fase", 8437: "Garras", 8439: "Aftershock", 8351: "Glacial", 8360: "Libro", 8369: "FirstStrike"
                 };
 
                 const me = liveData.participants.find(p => p.puuid === config.puuid);
-                
-                // Formato runas: Clave + Rama Secundaria
-                const runeClave = runasMap[me.perks.perkIds[0]] || "Runa";
-                const runeSecu = runasMap[me.perks.perkSubStyle] || "Sec";
-                const runasCompletas = `${runeClave} + ${runeSecu}`;
+                const runasCompletas = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
 
-                // 2. Obtener Elo de TODOS los jugadores
-                // Esto puede tardar 1-2 segundos
+                // Obtenemos los rangos de todos UNA SOLA VEZ
                 const playerDetails = await Promise.all(liveData.participants.map(async (p) => {
-                    const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`).catch(() => ({ data: [] }));
-                    const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
-                    const eloTxt = soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "Unranked"; // Ej: E3, D1
-                    
-                    return {
-                        name: p.riotIdGameName || "Anon",
-                        champ: champMap[p.championId] || "Champ",
-                        team: p.teamId,
-                        elo: eloTxt,
-                        isSmite: p.spell1Id === 11 || p.spell2Id === 11,
-                        puuid: p.puuid
-                    };
+                    try {
+                        const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
+                        const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+                        return {
+                            name: p.riotIdGameName || "Anon",
+                            champ: champMap[p.championId] || "Champ",
+                            team: p.teamId,
+                            eloNum: soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null,
+                            eloTxt: soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "UNR",
+                            isSmite: p.spell1Id === 11 || p.spell2Id === 11,
+                            puuid: p.puuid
+                        };
+                    } catch (e) {
+                        return { name: p.riotIdGameName || "Anon", champ: champMap[p.championId] || "Champ", team: p.teamId, eloNum: null, eloTxt: "???", isSmite: false, puuid: p.puuid };
+                    }
                 }));
 
-                // 3. Calcular Elo Medio (usando tu función de antes)
-                const avgElo = await getAverageElo(liveData.participants, config.region);
+                const elosValidos = playerDetails.map(p => p.eloNum).filter(v => v !== null);
+                const avgElo = calculateAvgFromElos(elosValidos);
 
-                // 4. Organizar Aliados y Rivales
-                // Intentamos poner al Jungla (smite) el segundo por convención
-                const sortTeam = (teamId) => {
-                    const team = playerDetails.filter(p => p.team === teamId);
-                    return team.sort((a, b) => b.isSmite - a.isSmite); // El que tiene smite arriba
-                };
-
-                const formatPlayer = (p) => `${p.name}(${p.champ} ${p.elo})`;
+                const sortTeam = (teamId) => playerDetails.filter(p => p.team === teamId).sort((a, b) => b.isSmite - a.isSmite);
+                const formatPlayer = (p) => `${p.name}(${p.champ} ${p.eloTxt})`;
 
                 const misAliados = sortTeam(me.teamId).filter(p => p.puuid !== me.puuid).map(formatPlayer).join(", ");
                 const misRivales = sortTeam(me.teamId === 100 ? 200 : 100).map(formatPlayer).join(", ");
 
-                // MENSAJES
-                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasCompletas}) | Elo Medio: ${avgElo}`);
-                client.say(channel, `ALIADOS: ${misAliados} vs RIVALES: ${misRivales}`);
+                // Enviamos en mensajes separados para evitar el límite de 500 caracteres de Twitch
+                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasCompletas}) ┃ Elo Medio: ${avgElo}`);
+                client.say(channel, `ALIADOS: ${misAliados}`);
+                client.say(channel, `RIVALES: ${misRivales}`);
 
             } catch (e) {
-                if (e.response && e.response.status === 404) {
-                    client.say(channel, `${config.name} no está en partida.`);
-                } else {
-                    console.error(e);
-                    client.say(channel, "Error al obtener detalles.");
-                }
+                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !match.");
             }
         }
-
         if (command === '!lastmatch' || command === '!ultimogame') {
             try {
                 const history = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1`);
@@ -308,27 +283,28 @@ client.on('message', async (channel, tags, message, self) => {
                 client.say(channel, "Error al obtener historial.");
             }
         }
-        if (command === '!bans') {
+if (command === '!bans') {
             try {
                 if (!config.puuid) await updateStats(channelName);
                 const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
                 const response = await riotRequest.get(url);
                 const bans = response.data.bannedChampions;
 
-                if (!bans || bans.length === 0) return client.say(channel, "No hay baneos en esta partida.");
+                if (!bans || bans.length === 0) return client.say(channel, "No hay baneos.");
 
-                const nombresBaneados = bans
-                    .filter(b => b.championId !== -1)
-                    .map(b => champMap[b.championId] || `ID:${b.championId}`);
-
+                const nombresBaneados = bans.map(b => champMap[b.championId] || null).filter(n => n !== null);
+                
+                // Los primeros 5 son un equipo, los siguientes 5 el otro
                 const azul = nombresBaneados.slice(0, 5).join(", ");
                 const rojo = nombresBaneados.slice(5, 10).join(", ");
 
-                client.say(channel, `[BANS] Equipo Azul: ${azul || "Ninguno"} | Equipo Rojo: ${rojo || "Ninguno"}`);
+                client.say(channel, `[BANS] Azul: ${azul || "Ninguno"} ┃ Rojo: ${rojo || "Ninguno"}`);
             } catch (e) {
-                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error al ver los bans.");
+                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !bans.");
             }
         }
+
+        // --- COMANDO !RUNAS (CORREGIDO) ---
         if (command === '!perks' || command === '!runas') {
             try {
                 if (!config.puuid) await updateStats(channelName);
@@ -336,25 +312,16 @@ client.on('message', async (channel, tags, message, self) => {
                 const response = await riotRequest.get(url);
                 const me = response.data.participants.find(p => p.puuid === config.puuid);
 
-                // Riot envía todas las runas en el array perkIds
-                const ids = me.perks.perkIds;
-                // Mapeamos los nombres
-                const nombres = ids.map(id => runasCompletasMap[id] || `ID:${id}`);
-                // Separamos para que sea legible
+                const nombres = me.perks.perkIds.map(id => runasCompletasMap[id] || `ID:${id}`);
+                
                 const clave = nombres[0];
                 const ramaPrincipal = nombres.slice(1, 4).join(", ");
                 const ramaSecundaria = nombres.slice(4, 6).join(", ");
-                const stats = nombres.slice(6, 9).join(" | ");
+                const shardStats = nombres.slice(6, 9).join(" | ");
 
-                client.say(channel, `[RUNAS DE ${config.name.toUpperCase()}]`);
-                client.say(channel, `Principal: ${clave} (${ramaPrincipal}) | Secundaria: ${ramaSecundaria} | Stats: ${stats}`);
-
+                client.say(channel, `[RUNAS] ${config.name}: ${clave} (${ramaPrincipal}) ┃ Sec: ${ramaSecundaria} ┃ Stats: ${shardStats}`);
             } catch (e) {
-                if (e.response && e.response.status === 404) {
-                    client.say(channel, `${config.name} no esta en partida.`);
-                } else {
-                    client.say(channel, "Error al obtener las runas detalladas.");
-                }
+                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !runas.");
             }
         }
 
