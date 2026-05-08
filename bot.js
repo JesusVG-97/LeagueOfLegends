@@ -175,41 +175,65 @@ client.on('message', async (channel, tags, message, self) => {
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
-                // Mapeo de Runas Clave
-                const keystones = { 
+                // 1. Diccionario de Runas (Clave + Secundaria)
+                const runasMap = {
+                    8000: "Precisión", 8100: "Dominación", 8200: "Brujería", 8300: "Inspiración", 8400: "Valor",
                     8005: "PTA", 8008: "Lethal Tempo", 8010: "Conqueror", 8021: "Fleet",
-                    8112: "Electrocute", 8124: "Predator", 8128: "Dark Harvest", 9923: "Hail of Blades",
-                    8214: "Aery", 8229: "Arcane Comet", 8230: "Phase Rush",
-                    8437: "Grasp", 8439: "Aftershock", 8465: "Guardian",
-                    8351: "Glacial", 8360: "Unsealed Spellbook", 8369: "First Strike"
+                    8112: "Electrocute", 8124: "Predator", 8128: "Dark Harvest", 9923: "HoB",
+                    8214: "Aery", 8229: "Cometa", 8230: "Fase", 8437: "Garras", 8439: "Aftershock",
+                    8351: "Glacial", 8360: "Libro", 8369: "First Strike"
                 };
 
                 const me = liveData.participants.find(p => p.puuid === config.puuid);
-                const champName = champMap[me.championId] || `ID: ${me.championId}`;
-                const myKeystone = keystones[me.perks.perkIds[0]] || "Runa";
-                const avgElo = await getAverageElo(liveData.participants, config.region);
                 
-                const aliados = liveData.participants
-                    .filter(p => p.teamId === me.teamId && p.puuid !== me.puuid)
-                    .map(p => p.riotIdGameName || "Anon")
-                    .join(", ");
+                // Formato runas: Clave + Rama Secundaria
+                const runeClave = runasMap[me.perks.perkIds[0]] || "Runa";
+                const runeSecu = runasMap[me.perks.perkSubStyle] || "Sec";
+                const runasCompletas = `${runeClave} + ${runeSecu}`;
 
-                const rivales = liveData.participants
-                    .filter(p => p.teamId !== me.teamId)
-                    .map(p => p.riotIdGameName || "Anon")
-                    .join(", ");
+                // 2. Obtener Elo de TODOS los jugadores
+                // Esto puede tardar 1-2 segundos
+                const playerDetails = await Promise.all(liveData.participants.map(async (p) => {
+                    const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`).catch(() => ({ data: [] }));
+                    const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+                    const eloTxt = soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "Unranked"; // Ej: E3, D1
+                    
+                    return {
+                        name: p.riotIdGameName || "Anon",
+                        champ: champMap[p.championId] || "Champ",
+                        team: p.teamId,
+                        elo: eloTxt,
+                        isSmite: p.spell1Id === 11 || p.spell2Id === 11,
+                        puuid: p.puuid
+                    };
+                }));
 
-                let timeText = (liveData.gameLength < 0) ? "Cargando" : Math.floor(liveData.gameLength / 60) + "m";
+                // 3. Calcular Elo Medio (usando tu función de antes)
+                const avgElo = await getAverageElo(liveData.participants, config.region);
 
-                client.say(channel, `[PARTIDA] ${config.name} con ${champName} (${myKeystone}) | Elo Medio: ${avgElo} | Tiempo: ${timeText}`);
-                client.say(channel, `Aliados: ${aliados} VS Rivales: ${rivales}`);
+                // 4. Organizar Aliados y Rivales
+                // Intentamos poner al Jungla (smite) el segundo por convención
+                const sortTeam = (teamId) => {
+                    const team = playerDetails.filter(p => p.team === teamId);
+                    return team.sort((a, b) => b.isSmite - a.isSmite); // El que tiene smite arriba
+                };
+
+                const formatPlayer = (p) => `${p.name}(${p.champ} ${p.elo})`;
+
+                const misAliados = sortTeam(me.teamId).filter(p => p.puuid !== me.puuid).map(formatPlayer).join(", ");
+                const misRivales = sortTeam(me.teamId === 100 ? 200 : 100).map(formatPlayer).join(", ");
+
+                // MENSAJES
+                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasCompletas}) | Elo Medio: ${avgElo}`);
+                client.say(channel, `ALIADOS: ${misAliados}`);
+                client.say(channel, `RIVALES: ${misRivales}`);
 
             } catch (e) {
                 if (e.response && e.response.status === 404) {
-                    client.say(channel, `${config.name} no esta en partida ahora mismo.`);
+                    client.say(channel, `${config.name} no está en partida.`);
                 } else {
-                    console.error("Error Spectator:", e.response ? e.response.status : e.message);
-                    client.say(channel, "No se pudo obtener informacion de la partida actual.");
+                    console.error(e);
+                    client.say(channel, "Error al obtener detalles.");
                 }
             }
         }
