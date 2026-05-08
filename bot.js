@@ -278,34 +278,30 @@ client.on('message', async (channel, tags, message, self) => {
                 const info = match.data.info;
                 const p = info.participants.find(part => part.puuid === config.puuid);
                 
-                // --- LÓGICA DE RUNAS PARA HISTORIAL ---
-                // En match-v5 las runas están en p.perks.styles
+                // --- LÓGICA DE RUNAS ---
                 const primaryStyle = p.perks.styles.find(s => s.description === 'primaryStyle');
                 const subStyle = p.perks.styles.find(s => s.description === 'subStyle');
-                
-                // Sacamos los IDs (la primera de primary es la clave, las otras 3 son rama)
                 const primaryIds = primaryStyle ? primaryStyle.selections.map(s => s.perk) : [];
                 const subIds = subStyle ? subStyle.selections.map(s => s.perk) : [];
                 
                 const clave = runasCompletasMap[primaryIds[0]] || "Runa";
-                const ramaPrincipal = primaryIds.slice(1, 4).map(id => runasCompletasMap[id] || id).join(", ");
-                const ramaSecundaria = subIds.map(id => runasCompletasMap[id] || id).join(", ");
-                // ---------------------------------------
+                const rPrincipal = primaryIds.slice(1, 4).map(id => runasCompletasMap[id] || id).join(", ");
+                const rSecundaria = subIds.map(id => runasCompletasMap[id] || id).join(", ");
 
+                // --- DATOS PARTIDA ---
                 const avgEloText = await getAverageElo(info.participants, config.region);
                 const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
                 const durationMins = info.gameDuration / 60;
                 const dmg = (p.totalDamageDealtToChampions / durationMins).toFixed(0);
 
-                // Mensaje de resultado y KDA
-                client.say(channel, `[ÚLTIMA] ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/durationMins).toFixed(1)}/m). Daño/m: ${dmg}`);
-                
-                // Mensaje de las runas
-                client.say(channel, `RUNAS: ${clave} (${ramaPrincipal}) | Secundaria: ${ramaSecundaria}`);
+                // --- UNIFICACIÓN EN UN SOLO MENSAJE ---
+                const mensajeCompleto = `[ÚLTIMA] ${avgEloText}: ${p.win ? 'V' : 'D'} con ${p.championName} (${p.kills}/${p.deaths}/${p.assists}) | CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) | Daño/m: ${dmg} | RUNAS: ${clave} (${rPrincipal}) + (${rSecundaria})`;
+
+                client.say(channel, mensajeCompleto);
 
             } catch (e) {
                 console.error(e);
-                client.say(channel, "No se pudo obtener el historial.");
+                client.say(channel, "Error al obtener historial.");
             }
         }
         if (command === '!bans') {
