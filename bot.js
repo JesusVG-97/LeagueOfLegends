@@ -10,6 +10,37 @@ app.listen(process.env.PORT || 3000);
 const champMap = {
     1: "Annie", 2: "Olaf", 3: "Galio", 4: "Twisted Fate", 5: "Xin Zhao", 6: "Urgot", 7: "LeBlanc", 8: "Vladimir", 9: "Fiddlesticks", 10: "Kayle", 11: "Master Yi", 12: "Alistar", 13: "Ryze", 14: "Sion", 15: "Sivir", 16: "Soraka", 17: "Teemo", 18: "Tristana", 19: "Warwick", 20: "Nunu", 21: "Miss Fortune", 22: "Ashe", 23: "Tryndamere", 24: "Jax", 25: "Morgana", 26: "Zilean", 27: "Singed", 28: "Evelynn", 29: "Twitch", 30: "Karthus", 31: "Cho'Gath", 32: "Amumu", 33: "Rammus", 34: "Anivia", 35: "Shaco", 36: "Dr. Mundo", 37: "Sona", 38: "Kassadin", 39: "Irelia", 40: "Janna", 41: "Gangplank", 42: "Corki", 43: "Karma", 44: "Taric", 45: "Veigar", 48: "Trundle", 50: "Swain", 51: "Caitlyn", 53: "Blitzcrank", 54: "Malphite", 55: "Katarina", 56: "Nocturne", 57: "Maokai", 58: "Renekton", 59: "Jarvan IV", 60: "Elise", 61: "Orianna", 62: "Wukong", 63: "Brand", 64: "Lee Sin", 67: "Vayne", 68: "Rumble", 69: "Cassiopeia", 72: "Skarner", 74: "Heimerdinger", 75: "Nasus", 76: "Nidalee", 77: "Udyr", 78: "Poppy", 79: "Gragas", 80: "Pantheon", 81: "Ezreal", 82: "Mordekaiser", 83: "Yorick", 84: "Akali", 85: "Kennen", 86: "Garen", 89: "Leona", 90: "Malzahar", 91: "Talon", 92: "Riven", 96: "Kog'Maw", 98: "Shen", 99: "Lux", 101: "Xerath", 102: "Shyvana", 103: "Ahri", 104: "Graves", 105: "Fizz", 106: "Volibear", 107: "Rengar", 110: "Varus", 111: "Nautilus", 112: "Viktor", 113: "Sejuani", 114: "Fiora", 115: "Ziggs", 117: "Lulu", 119: "Draven", 120: "Hecarim", 121: "Khazix", 122: "Darius", 126: "Jayce", 127: "Lissandra", 131: "Diana", 133: "Quinn", 134: "Syndra", 136: "Aurelion Sol", 141: "Kayn", 142: "Zoe", 143: "Zyra", 145: "Kaisa", 147: "Seraphine", 150: "Gnar", 154: "Zac", 157: "Yasuo", 161: "Velkoz", 163: "Taliyah", 164: "Camille", 166: "Akshan", 200: "Belveth", 201: "Braum", 202: "Jhin", 203: "Kindred", 221: "Zeri", 222: "Jinx", 223: "Tahm Kench", 233: "Briar", 234: "Viego", 235: "Senna", 236: "Lucian", 238: "Zed", 240: "Kled", 245: "Ekko", 246: "Qiyana", 254: "Vi", 266: "Aatrox", 267: "Nami", 268: "Azir", 350: "Yuumi", 360: "Samira", 412: "Thresh", 420: "Illaoi", 421: "RekSai", 427: "Ivern", 429: "Kalista", 432: "Bard", 497: "Rakan", 498: "Xayah", 516: "Ornn", 517: "Sylas", 518: "Neeko", 523: "Aphelios", 526: "Rell", 555: "Pyke", 711: "Vex", 777: "Yone", 799: "Smolder", 875: "Sett", 876: "Lillia", 887: "Gwen", 888: "Renata", 895: "Nilah", 897: "KSante", 901: "Hwei", 902: "Milio", 910: "Hwei", 950: "Naafiri", 1000: "Ambessa"
 };
+// --- MAPEO DE RUNAS
+const runasCompletasMap = {
+                    // PRECISIÓN
+                    8005: "PTA", 8008: "Lethal Tempo", 8010: "Conquistador", 8021: "Pies Veloces",
+                    9101: "Sobrecuración", 9111: "Triunfo", 8009: "Claridad",
+                    9104: "Presteza", 9105: "Tenacidad", 9103: "Linaje",
+                    8014: "Golpe de Gracia", 8017: "Derribado", 8299: "Último Esfuerzo",
+                    // DOMINACIÓN
+                    8112: "Electrocutar", 8124: "Depredador", 8128: "Cosecha Oscura", 9923: "HoB",
+                    8126: "Golpe Bajo", 8139: "Sabor a Sangre", 8143: "Impacto Súbito",
+                    8136: "Zombi", 8120: "Poro", 8138: "Colección Globos",
+                    8135: "Caza Voraz", 8134: "Caza Ingeniosa", 8105: "Caza Incesante", 8106: "Caza Definitiva",
+                    // BRUJERÍA
+                    8214: "Aery", 8229: "Cometa", 8230: "Fase Veloz",
+                    8224: "Orbe Anulador", 8226: "Flujo Maná", 8275: "Capa del Nimbo",
+                    8210: "Trascendencia", 8234: "Celeridad", 8233: "Concentración Absoluta",
+                    8237: "Piroláser", 8232: "Caminar sobre Agua", 8236: "Tormenta Creciente",
+                    // VALOR
+                    8437: "Garras", 8439: "Aftershock", 8465: "Protector",
+                    8446: "Demoler", 8463: "Fuente de Vida", 8401: "Golpe de Escudo",
+                    8429: "Condicionamiento", 8444: "Fuerzas Renovadas", 8473: "Revestimiento",
+                    8451: "Sobrecrecimiento", 8453: "Revitalizar", 8242: "Inquebrantable",
+                    // INSPIRACIÓN
+                    8351: "Glacial", 8360: "Libro de Hechizos", 8369: "First Strike",
+                    8306: "Destello Hextech", 8304: "Calzado Mágico", 8313: "Sincronía Perfecta",
+                    8321: "Mercado Futuro", 8316: "Entrega Galletas", 8345: "Calzado", 
+                    8347: "Perspicacia Cósmica", 8410: "Velocidad de Aproximación", 8352: "Tónico",
+                    // ESTADÍSTICAS (Shards)
+                    5008: "Fuerza Adaptable", 5005: "Vel. Ataque", 5007: "Haste",
+                    5002: "Armadura", 5003: "Resist. Mágica", 5001: "Vida"
+                };
 
 const streamerAccounts = {
     "xuclacubatas_": { name: "XuclaCubatas", tag: "ESP", region: "euw1", startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
@@ -239,15 +270,92 @@ client.on('message', async (channel, tags, message, self) => {
         }
 
         if (command === '!lastmatch' || command === '!ultimogame') {
-            const history = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1`);
-            if (!history.data[0]) return client.say(channel, "Sin historial");
-            const match = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}`);
-            const info = match.data.info;
-            const p = info.participants.find(part => part.puuid === config.puuid);
-            const avgEloText = await getAverageElo(info.participants, config.region);
-            const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
-            const dmg = (p.totalDamageDealtToChampions / (info.gameDuration / 60)).toFixed(0);
-            client.say(channel, `MEDIA: ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/(info.gameDuration/60)).toFixed(1)}/m). Daño/m: ${dmg} Vision: ${p.visionScore}`);
+            try {
+                const history = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1`);
+                if (!history.data[0]) return client.say(channel, "Sin historial");
+
+                const match = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}`);
+                const info = match.data.info;
+                const p = info.participants.find(part => part.puuid === config.puuid);
+                
+                // --- LÓGICA DE RUNAS PARA HISTORIAL ---
+                // En match-v5 las runas están en p.perks.styles
+                const primaryStyle = p.perks.styles.find(s => s.description === 'primaryStyle');
+                const subStyle = p.perks.styles.find(s => s.description === 'subStyle');
+                
+                // Sacamos los IDs (la primera de primary es la clave, las otras 3 son rama)
+                const primaryIds = primaryStyle ? primaryStyle.selections.map(s => s.perk) : [];
+                const subIds = subStyle ? subStyle.selections.map(s => s.perk) : [];
+                
+                const clave = runasCompletasMap[primaryIds[0]] || "Runa";
+                const ramaPrincipal = primaryIds.slice(1, 4).map(id => runasCompletasMap[id] || id).join(", ");
+                const ramaSecundaria = subIds.map(id => runasCompletasMap[id] || id).join(", ");
+                // ---------------------------------------
+
+                const avgEloText = await getAverageElo(info.participants, config.region);
+                const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
+                const durationMins = info.gameDuration / 60;
+                const dmg = (p.totalDamageDealtToChampions / durationMins).toFixed(0);
+
+                // Mensaje de resultado y KDA
+                client.say(channel, `[ÚLTIMA] ${avgEloText}: ${p.win ? 'VICTORIA' : 'DERROTA'} con ${p.championName}. KDA: ${p.kills}/${p.deaths}/${p.assists}. CS: ${cs} (${(cs/durationMins).toFixed(1)}/m). Daño/m: ${dmg}`);
+                
+                // Mensaje de las runas
+                client.say(channel, `RUNAS: ${clave} (${ramaPrincipal}) | Secundaria: ${ramaSecundaria}`);
+
+            } catch (e) {
+                console.error(e);
+                client.say(channel, "No se pudo obtener el historial.");
+            }
+        }
+        if (command === '!bans') {
+            try {
+                if (!config.puuid) await updateStats(channelName);
+                const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
+                const response = await riotRequest.get(url);
+                const bans = response.data.bannedChampions;
+
+                if (!bans || bans.length === 0) return client.say(channel, "No hay baneos en esta partida.");
+
+                const nombresBaneados = bans
+                    .filter(b => b.championId !== -1)
+                    .map(b => champMap[b.championId] || `ID:${b.championId}`);
+
+                const azul = nombresBaneados.slice(0, 5).join(", ");
+                const rojo = nombresBaneados.slice(5, 10).join(", ");
+
+                client.say(channel, `[BANS] Equipo Azul: ${azul || "Ninguno"} | Equipo Rojo: ${rojo || "Ninguno"}`);
+            } catch (e) {
+                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error al ver los bans.");
+            }
+        }
+        if (command === '!perks' || command === '!runas') {
+            try {
+                if (!config.puuid) await updateStats(channelName);
+                const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
+                const response = await riotRequest.get(url);
+                const me = response.data.participants.find(p => p.puuid === config.puuid);
+
+                // Riot envía todas las runas en el array perkIds
+                const ids = me.perks.perkIds;
+                // Mapeamos los nombres
+                const nombres = ids.map(id => runasCompletasMap[id] || `ID:${id}`);
+                // Separamos para que sea legible
+                const clave = nombres[0];
+                const ramaPrincipal = nombres.slice(1, 4).join(", ");
+                const ramaSecundaria = nombres.slice(4, 6).join(", ");
+                const stats = nombres.slice(6, 9).join(" | ");
+
+                client.say(channel, `[RUNAS DE ${config.name.toUpperCase()}]`);
+                client.say(channel, `Principal: ${clave} (${ramaPrincipal}) | Secundaria: ${ramaSecundaria} | Stats: ${stats}`);
+
+            } catch (e) {
+                if (e.response && e.response.status === 404) {
+                    client.say(channel, `${config.name} no esta en partida.`);
+                } else {
+                    client.say(channel, "Error al obtener las runas detalladas.");
+                }
+            }
         }
 
         if (command.startsWith('!insulto')) {
