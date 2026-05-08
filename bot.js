@@ -286,7 +286,7 @@ client.on('message', async (channel, tags, message, self) => {
                 const durationMins = info.gameDuration / 60;
                 const dmg = (p.totalDamageDealtToChampions / durationMins).toFixed(0);
 
-                const mensajeCompleto = `[ÚLTIMA: ${avgEloText}] ${p.win ? 'VICTORIA ' : 'DERROTA '} con ${champMap[p.championId]} (${p.kills}/${p.deaths}/${p.assists}) ┃ CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) ┃ Daño/m: ${dmg} ┃ Runas: ${clave} + (${rSecundaria})`;
+                const mensajeCompleto = `${avgEloText} ${p.win ? 'VICTORIA ' : 'DERROTA '} con ${champMap[p.championId]} (${p.kills}/${p.deaths}/${p.assists}) ┃ CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) ┃ Daño/m: ${dmg} ┃ Runas: ${clave} + (${rSecundaria})`;
 
                 client.say(channel, mensajeCompleto);
 
