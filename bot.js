@@ -8,7 +8,7 @@ app.listen(process.env.PORT || 3000);
 
 // --- MAPEO DE CAMPEONES (ACTUALIZADO HASTA AMBESSA) ---
 const champMap = {
-    1: "Annie", 2: "Olaf", 3: "Galio", 4: "Twisted Fate", 5: "Xin Zhao", 6: "Urgot", 7: "LeBlanc", 8: "Vladimir", 9: "Fiddlesticks", 10: "Kayle", 11: "Master Yi", 12: "Alistar", 13: "Ryze", 14: "Sion", 15: "Sivir", 16: "Soraka", 17: "Teemo", 18: "Tristana", 19: "Warwick", 20: "Nunu", 21: "Miss Fortune", 22: "Ashe", 23: "Tryndamere", 24: "Jax", 25: "Morgana", 26: "Zilean", 27: "Singed", 28: "Evelynn", 29: "Twitch", 30: "Karthus", 31: "Cho'Gath", 32: "Amumu", 33: "Rammus", 34: "Anivia", 35: "Shaco", 36: "Dr. Mundo", 37: "Sona", 38: "Kassadin", 39: "Irelia", 40: "Janna", 41: "Gangplank", 42: "Corki", 43: "Karma", 44: "Taric", 45: "Veigar", 48: "Trundle", 50: "Swain", 51: "Caitlyn", 53: "Blitzcrank", 54: "Malphite", 55: "Katarina", 56: "Nocturne", 57: "Maokai", 58: "Renekton", 59: "Jarvan IV", 60: "Elise", 61: "Orianna", 62: "Wukong", 63: "Brand", 64: "Lee Sin", 67: "Vayne", 68: "Rumble", 69: "Cassiopeia", 72: "Skarner", 74: "Heimerdinger", 75: "Nasus", 76: "Nidalee", 77: "Udyr", 78: "Poppy", 79: "Gragas", 80: "Pantheon", 81: "Ezreal", 82: "Mordekaiser", 83: "Yorick", 84: "Akali", 85: "Kennen", 86: "Garen", 89: "Leona", 90: "Malzahar", 91: "Talon", 92: "Riven", 96: "Kog'Maw", 98: "Shen", 99: "Lux", 101: "Xerath", 102: "Shyvana", 103: "Ahri", 104: "Graves", 105: "Fizz", 106: "Volibear", 107: "Rengar", 110: "Varus", 111: "Nautilus", 112: "Viktor", 113: "Sejuani", 114: "Fiora", 115: "Ziggs", 117: "Lulu", 119: "Draven", 120: "Hecarim", 121: "Khazix", 122: "Darius", 126: "Jayce", 127: "Lissandra", 131: "Diana", 133: "Quinn", 134: "Syndra", 136: "Aurelion Sol", 141: "Kayn", 142: "Zoe", 143: "Zyra", 145: "Kaisa", 147: "Seraphine", 150: "Gnar", 154: "Zac", 157: "Yasuo", 161: "Velkoz", 163: "Taliyah", 164: "Camille", 166: "Akshan", 200: "Belveth", 201: "Braum", 202: "Jhin", 203: "Kindred", 221: "Zeri", 222: "Jinx", 223: "Tahm Kench", 233: "Briar", 234: "Viego", 235: "Senna", 236: "Lucian", 238: "Zed", 240: "Kled", 245: "Ekko", 246: "Qiyana", 254: "Vi", 266: "Aatrox", 267: "Nami", 268: "Azir", 350: "Yuumi", 360: "Samira", 412: "Thresh", 420: "Illaoi", 421: "RekSai", 427: "Ivern", 429: "Kalista", 432: "Bard", 497: "Rakan", 498: "Xayah", 516: "Ornn", 517: "Sylas", 518: "Neeko", 523: "Aphelios", 526: "Rell", 555: "Pyke", 711: "Vex", 777: "Yone", 799: "Smolder", 875: "Sett", 876: "Lillia", 887: "Gwen", 888: "Renata", 895: "Nilah", 897: "KSante", 901: "Hwei", 902: "Milio", 910: "Hwei", 950: "Naafiri", 1000: "Ambessa"
+    1: "Annie", 2: "Olaf", 3: "Galio", 4: "Twisted Fate", 5: "Xin Zhao", 6: "Urgot", 7: "LeBlanc", 8: "Vladimir", 9: "Fiddlesticks", 10: "Kayle", 11: "Master Yi", 12: "Alistar", 13: "Ryze", 14: "Sion", 15: "Sivir", 16: "Soraka", 17: "Teemo", 18: "Tristana", 19: "Warwick", 20: "Nunu", 21: "Miss Fortune", 22: "Ashe", 23: "Tryndamere", 24: "Jax", 25: "Morgana", 26: "Zilean", 27: "Singed", 28: "Evelynn", 29: "Twitch", 30: "Karthus", 31: "Cho'Gath", 32: "Amumu", 33: "Rammus", 34: "Anivia", 35: "Shaco", 36: "Dr. Mundo", 37: "Sona", 38: "Kassadin", 39: "Irelia", 40: "Janna", 41: "Gangplank", 42: "Corki", 43: "Karma", 44: "Taric", 45: "Veigar", 48: "Trundle", 50: "Swain", 51: "Caitlyn", 53: "Blitzcrank", 54: "Malphite", 55: "Katarina", 56: "Nocturne", 57: "Maokai", 58: "Renekton", 59: "Jarvan IV", 60: "Elise", 61: "Orianna", 62: "Wukong", 63: "Brand", 64: "Lee Sin", 67: "Vayne", 68: "Rumble", 69: "Cassiopeia", 72: "Skarner", 74: "Heimerdinger", 75: "Nasus", 76: "Nidalee", 77: "Udyr", 78: "Poppy", 79: "Gragas", 80: "Pantheon", 81: "Ezreal", 82: "Mordekaiser", 83: "Yorick", 84: "Akali", 85: "Kennen", 86: "Garen", 89: "Leona", 90: "Malzahar", 91: "Talon", 92: "Riven", 96: "Kog'Maw", 98: "Shen", 99: "Lux", 101: "Xerath", 102: "Shyvana", 103: "Ahri", 104: "Graves", 105: "Fizz", 106: "Volibear", 107: "Rengar", 110: "Varus", 111: "Nautilus", 112: "Viktor", 113: "Sejuani", 114: "Fiora", 115: "Ziggs", 117: "Lulu", 119: "Draven", 120: "Hecarim", 121: "Khazix", 122: "Darius", 126: "Jayce", 127: "Lissandra", 131: "Diana", 133: "Quinn", 134: "Syndra", 136: "Aurelion Sol", 141: "Kayn", 142: "Zoe", 143: "Zyra", 145: "Kaisa", 147: "Seraphine", 150: "Gnar", 154: "Zac", 157: "Yasuo", 161: "Velkoz", 163: "Taliyah", 164: "Camille", 166: "Akshan", 200: "Belveth", 201: "Braum", 202: "Jhin", 203: "Kindred", 221: "Zeri", 222: "Jinx", 223: "Tahm Kench", 233: "Briar", 234: "Viego", 235: "Senna", 236: "Lucian", 238: "Zed", 240: "Kled", 245: "Ekko", 246: "Qiyana", 254: "Vi", 266: "Aatrox", 267: "Nami", 268: "Azir", 350: "Yuumi", 360: "Samira", 412: "Thresh", 420: "Illaoi", 421: "RekSai", 427: "Ivern", 429: "Kalista", 432: "Bard", 497: "Rakan", 498: "Xayah", 516: "Ornn", 517: "Sylas", 518: "Neeko", 523: "Aphelios", 526: "Rell", 555: "Pyke", 711: "Vex", 777: "Yone", 799: "Smolder", 875: "Sett", 876: "Lillia", 887: "Gwen", 888: "Renata", 895: "Nilah", 897: "KSante", 902: "Milio", 910: "Hwei", 950: "Naafiri", 1000: "Ambessa"
 };
 // --- MAPEO DE RUNAS
 const runasCompletasMap = {
@@ -105,7 +105,18 @@ function calculateAvgFromElos(elos) {
     const avg = sum / elos.length;
     return eloToText(avg);
 }
-
+async function getAverageElo(participants, region) {
+    const elos = await Promise.all(participants.map(async (p) => {
+        try {
+            // Un pequeño delay para no saturar a Riot
+            const res = await riotRequest.get(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid || p.summonerId}`);
+            const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+            return soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null;
+        } catch (e) { return null; }
+    }));
+    const validElos = elos.filter(v => v !== null);
+    return calculateAvgFromElos(validElos);
+}
 function getNextRank(rank) {
     const ranks = { 'IV': 'III', 'III': 'II', 'II': 'I' };
     return ranks[rank] || '';
@@ -248,39 +259,40 @@ client.on('message', async (channel, tags, message, self) => {
                 client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !match.");
             }
         }
-        if (command === '!lastmatch' || command === '!ultimogame') {
+       if (command === '!lastmatch' || command === '!ultimogame') {
             try {
+                if (!config.puuid) await updateStats(channelName);
+                
                 const history = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${config.puuid}/ids?start=0&count=1`);
-                if (!history.data[0]) return client.say(channel, "Sin historial");
+                if (!history.data[0]) return client.say(channel, "Sin historial disponible.");
 
                 const match = await riotRequest.get(`https://${cluster}.api.riotgames.com/lol/match/v5/matches/${history.data[0]}`);
                 const info = match.data.info;
                 const p = info.participants.find(part => part.puuid === config.puuid);
                 
-                // --- LÓGICA DE RUNAS ---
+                // --- LÓGICA DE RUNAS (MATCH V5) ---
                 const primaryStyle = p.perks.styles.find(s => s.description === 'primaryStyle');
                 const subStyle = p.perks.styles.find(s => s.description === 'subStyle');
-                const primaryIds = primaryStyle ? primaryStyle.selections.map(s => s.perk) : [];
-                const subIds = subStyle ? subStyle.selections.map(s => s.perk) : [];
                 
-                const clave = runasCompletasMap[primaryIds[0]] || "Runa";
-                const rPrincipal = primaryIds.slice(1, 4).map(id => runasCompletasMap[id] || id).join(", ");
-                const rSecundaria = subIds.map(id => runasCompletasMap[id] || id).join(", ");
+                const clave = runasCompletasMap[primaryStyle?.selections[0].perk] || "Runa";
+                const rSecundaria = subStyle?.selections.map(s => runasCompletasMap[s.perk] || s.perk).join(", ") || "Secundaria";
 
                 // --- DATOS PARTIDA ---
+                // Nota: Sacar el elo medio de una partida pasada requiere 10 peticiones más. 
+                // Úsalo con moderación para no recibir ban de Riot.
                 const avgEloText = await getAverageElo(info.participants, config.region);
+                
                 const cs = p.totalMinionsKilled + p.neutralMinionsKilled;
                 const durationMins = info.gameDuration / 60;
                 const dmg = (p.totalDamageDealtToChampions / durationMins).toFixed(0);
 
-                // --- UNIFICACIÓN EN UN SOLO MENSAJE ---
-                const mensajeCompleto = `[${avgEloText}] ${p.win ? 'Victoria' : 'Derrota'} con ${p.championName} (${p.kills}/${p.deaths}/${p.assists}) | CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) | Daño/m: ${dmg} ➜ RUNAS: ${clave} (${rPrincipal}) + (${rSecundaria})`;
+                const mensajeCompleto = `[ÚLTIMA: ${avgEloText}] ${p.win ? 'VICTORIA ' : 'DERROTA '} con ${champMap[p.championId]} (${p.kills}/${p.deaths}/${p.assists}) ┃ CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) ┃ Daño/m: ${dmg} ┃ Runas: ${clave} + (${rSecundaria})`;
 
                 client.say(channel, mensajeCompleto);
 
             } catch (e) {
                 console.error(e);
-                client.say(channel, "Error al obtener historial.");
+                client.say(channel, "Error al obtener el último match. ¿Quizás la API de Riot está saturada?");
             }
         }
 if (command === '!bans') {
