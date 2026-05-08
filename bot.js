@@ -261,8 +261,7 @@ client.on('message', async (channel, tags, message, self) => {
 
                 // MENSAJES
                 client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasCompletas}) | Elo Medio: ${avgElo}`);
-                client.say(channel, `ALIADOS: ${misAliados}`);
-                client.say(channel, `RIVALES: ${misRivales}`);
+                client.say(channel, `ALIADOS: ${misAliados} vs RIVALES: ${misRivales}`);
 
             } catch (e) {
                 if (e.response && e.response.status === 404) {
