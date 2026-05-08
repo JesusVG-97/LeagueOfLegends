@@ -12,6 +12,12 @@ const champMap = {
 };
 // --- MAPEO DE RUNAS
 const runasCompletasMap = {
+                     // --- ESTILOS / RAMAS ---
+                    8000: "Precisión", 
+                    8100: "Dominación", 
+                    8200: "Brujería", 
+                    8300: "Inspiración", 
+                    8400: "Valor",
                     // PRECISIÓN
                     8005: "PTA", 8008: "Lethal Tempo", 8010: "Conquistador", 8021: "Pies Veloces",
                     9101: "Sobrecuración", 9111: "Triunfo", 8009: "Claridad",
@@ -318,24 +324,34 @@ if (command === '!bans') {
 
         // --- COMANDO !RUNAS (CORREGIDO) ---
         if (command === '!perks' || command === '!runas') {
-            try {
-                if (!config.puuid) await updateStats(channelName);
-                const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
-                const response = await riotRequest.get(url);
-                const me = response.data.participants.find(p => p.puuid === config.puuid);
+    try {
+        if (!config.puuid) await updateStats(channelName);
+        const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
+        const response = await riotRequest.get(url);
+        const me = response.data.participants.find(p => p.puuid === config.puuid);
 
-                const nombres = me.perks.perkIds.map(id => runasCompletasMap[id] || `ID:${id}`);
-                
-                const clave = nombres[0];
-                const ramaPrincipal = nombres.slice(1, 4).join(", ");
-                const ramaSecundaria = nombres.slice(4, 6).join(", ");
-                const shardStats = nombres.slice(6, 9).join(" | ");
+        // Mapeamos los IDs de las runas que Riot SI nos deje ver
+        const nombres = me.perks.perkIds.map(id => runasCompletasMap[id] || `ID:${id}`);
+        
+        const clave = nombres[0] || "Desconocida";
+        // Aquí usamos perkStyle y perkSubStyle para que nunca salga vacío
+        const ramaPrincipal = runasCompletasMap[me.perks.perkStyle] || "Principal";
+        const ramaSecundaria = runasCompletasMap[me.perks.perkSubStyle] || "Secundaria";
 
-                client.say(channel, `[RUNAS] ${config.name}: ${clave} (${ramaPrincipal}) ┃ Sec: ${ramaSecundaria} ┃ Stats: ${shardStats}`);
-            } catch (e) {
-                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !runas.");
-            }
-        }
+        // Limpiamos los datos para que no salgan comas feas si faltan IDs
+        const menores = nombres.slice(1, 4).filter(n => n && !n.includes("ID:")).join(", ");
+        const secundarias = nombres.slice(4, 6).filter(n => n && !n.includes("ID:")).join(", ");
+
+        let msg = `[RUNAS] ${config.name}: ${clave} (${ramaPrincipal}`;
+        if (menores) msg += `: ${menores}`;
+        msg += `) ┃ Sec: ${ramaSecundaria}`;
+        if (secundarias) msg += `: ${secundarias}`;
+
+        client.say(channel, msg);
+    } catch (e) {
+        client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !runas.");
+    }
+}
 
         if (command.startsWith('!insulto')) {
             const poolInsultos = [
