@@ -209,13 +209,20 @@ client.on('message', async (channel, tags, message, self) => {
             // 3. Mensaje Unificado
             client.say(channel, `HOY: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) ┃ WR: ${wr}% ┃ ${metaInfo}`);
         }
-    if (command === '!match') {
+if (command === '!match') {
     try {
         if (!config.puuid) await updateStats(channelName);
 
         const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
         const activeResponse = await riotRequest.get(url);
         const liveData = activeResponse.data;
+
+        // Traductor de rangos para mostrar nombres completos
+        const traductorRangos = {
+            'IRON': 'Hierro', 'BRONZE': 'Bronce', 'SILVER': 'Plata', 'GOLD': 'Oro',
+            'PLATINUM': 'Platino', 'EMERALD': 'Esmeralda', 'DIAMOND': 'Diamante',
+            'MASTER': 'Maestro', 'GRANDMASTER': 'Gran Maestro', 'CHALLENGER': 'Aspirante'
+        };
 
         const runasMapShort = {
             8000: "Precisión", 8100: "Dominación", 8200: "Brujería", 8300: "Inspiración", 8400: "Valor",
@@ -231,24 +238,33 @@ client.on('message', async (channel, tags, message, self) => {
             try {
                 const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
                 const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+                
+                let eloLargo = "Unranked";
+                if (soloQ) {
+                    const tierEsp = traductorRangos[soloQ.tier] || soloQ.tier;
+                    // Si es Maestro o superior, no lleva número (I, II, etc)
+                    const esTierAlta = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(soloQ.tier);
+                    eloLargo = esTierAlta ? tierEsp : `${tierEsp} ${soloQ.rank}`;
+                }
+
                 return {
-                    name: p.riotIdGameName || "Anon",
                     champ: champMap[p.championId] || "Champ",
                     team: p.teamId,
                     eloNum: soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null,
-                    eloTxt: soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "UNR",
+                    eloTxt: eloLargo,
                     isSmite: p.spell1Id === 11 || p.spell2Id === 11,
                     puuid: p.puuid
                 };
             } catch (e) {
-                return { name: "Anon", champ: "Champ", team: p.teamId, eloNum: null, eloTxt: "???", isSmite: false };
+                return { champ: "Champ", team: p.teamId, eloNum: null, eloTxt: "???", isSmite: false };
             }
         }));
 
         const elosValidos = playerDetails.map(p => p.eloNum).filter(v => v !== null);
         const avgElo = calculateAvgFromElos(elosValidos);
 
-        const formatPlayer = (p) => `${p.name}(${p.champ} ${p.eloTxt})`;
+        // Formato sin nombre y sin paréntesis: Campeón Elo
+        const formatPlayer = (p) => `${p.champ} ${p.eloTxt}`;
         
         const aliados = playerDetails.filter(p => p.team === me.teamId && p.puuid !== me.puuid)
             .sort((a, b) => b.isSmite - a.isSmite).map(formatPlayer).join(", ");
@@ -256,7 +272,6 @@ client.on('message', async (channel, tags, message, self) => {
         const rivales = playerDetails.filter(p => p.team !== me.teamId)
             .sort((a, b) => b.isSmite - a.isSmite).map(formatPlayer).join(", ");
 
-        // UN SOLO MENSAJE COMPACTO
         const mensajeFinal = `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasResumen}) ┃ AVG: ${avgElo} ┃ ALIADOS: ${aliados} ┃ RIVALES: ${rivales}`;
 
         client.say(channel, mensajeFinal);
