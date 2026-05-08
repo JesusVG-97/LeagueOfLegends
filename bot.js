@@ -217,11 +217,11 @@ if (command === '!match') {
         const activeResponse = await riotRequest.get(url);
         const liveData = activeResponse.data;
 
-        // Traductor de rangos para mostrar nombres completos
-        const traductorRangos = {
-            'IRON': 'Hierro', 'BRONZE': 'Bronce', 'SILVER': 'Plata', 'GOLD': 'Oro',
-            'PLATINUM': 'Platino', 'EMERALD': 'Esmeralda', 'DIAMOND': 'Diamante',
-            'MASTER': 'Maestro', 'GRANDMASTER': 'Gran Maestro', 'CHALLENGER': 'Aspirante'
+        // Mapa de letras para rangos (ahorro de espacio máximo)
+        const rangoLetra = {
+            'IRON': 'I', 'BRONZE': 'B', 'SILVER': 'S', 'GOLD': 'G',
+            'PLATINUM': 'P', 'EMERALD': 'E', 'DIAMOND': 'D',
+            'MASTER': 'M', 'GRANDMASTER': 'GM', 'CHALLENGER': 'CH'
         };
 
         const runasMapShort = {
@@ -239,19 +239,19 @@ if (command === '!match') {
                 const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
                 const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
                 
-                let eloLargo = "Unranked";
+                let eloAbreviado = "UNR";
                 if (soloQ) {
-                    const tierEsp = traductorRangos[soloQ.tier] || soloQ.tier;
-                    // Si es Maestro o superior, no lleva número (I, II, etc)
-                    const esTierAlta = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(soloQ.tier);
-                    eloLargo = esTierAlta ? tierEsp : `${tierEsp} ${soloQ.rank}`;
+                    const letra = rangoLetra[soloQ.tier] || soloQ.tier[0];
+                    // Si es Maestro+ solo ponemos la letra, si no, letra + división (ej: E3)
+                    const esAlta = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(soloQ.tier);
+                    eloAbreviado = esAlta ? letra : `${letra}${soloQ.rank}`;
                 }
 
                 return {
                     champ: champMap[p.championId] || "Champ",
                     team: p.teamId,
                     eloNum: soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null,
-                    eloTxt: eloLargo,
+                    eloTxt: eloAbreviado,
                     isSmite: p.spell1Id === 11 || p.spell2Id === 11,
                     puuid: p.puuid
                 };
@@ -263,7 +263,7 @@ if (command === '!match') {
         const elosValidos = playerDetails.map(p => p.eloNum).filter(v => v !== null);
         const avgElo = calculateAvgFromElos(elosValidos);
 
-        // Formato sin nombre y sin paréntesis: Campeón Elo
+        // Formato ultra compacto: Campeón Elo (sin Anon, sin paréntesis)
         const formatPlayer = (p) => `${p.champ} ${p.eloTxt}`;
         
         const aliados = playerDetails.filter(p => p.team === me.teamId && p.puuid !== me.puuid)
@@ -385,6 +385,10 @@ if (command === '!bans') {
             let target = args[1] ? args[1] : `@${config.name}`;
             client.say(channel, `${target}, ${insultoRandom}`);
         }
+        if (command === '!comandos') {
+            client.say(channel, `Los comandos disponibles son: !insulto, !match, !lastmatch, !stats, !perks, !bans`);
+        }
+            
 
     } catch (err) { console.error("Error", err.message); }
 });
