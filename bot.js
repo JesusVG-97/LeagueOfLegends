@@ -218,6 +218,7 @@ client.on('message', async (channel, tags, message, self) => {
                 const activeResponse = await riotRequest.get(url);
                 const liveData = activeResponse.data;
 
+                // Mapeo rápido para el prefijo de runas en !match
                 const runasMapShort = {
                     8000: "Precisión", 8100: "Dom", 8200: "Brujería", 8300: "Insp", 8400: "Valor",
                     8005: "PTA", 8008: "Lethal", 8010: "Conq", 8021: "Fleet", 8112: "Electro",
@@ -226,9 +227,9 @@ client.on('message', async (channel, tags, message, self) => {
                 };
 
                 const me = liveData.participants.find(p => p.puuid === config.puuid);
-                const runasCompletas = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
+                const runasResumen = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
 
-                // Obtenemos los rangos de todos UNA SOLA VEZ
+                // Obtenemos los detalles de los 10 jugadores
                 const playerDetails = await Promise.all(liveData.participants.map(async (p) => {
                     try {
                         const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
@@ -256,10 +257,17 @@ client.on('message', async (channel, tags, message, self) => {
                 const misAliados = sortTeam(me.teamId).filter(p => p.puuid !== me.puuid).map(formatPlayer).join(", ");
                 const misRivales = sortTeam(me.teamId === 100 ? 200 : 100).map(formatPlayer).join(", ");
 
-                // Enviamos en mensajes separados para evitar el límite de 500 caracteres de Twitch
-                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasCompletas}) ┃ Elo Medio: ${avgElo}`);
-                client.say(channel, `ALIADOS: ${misAliados}`);
-                client.say(channel, `RIVALES: ${misRivales}`);
+                // --- ENVIAR MENSAJES (Separados para evitar cortes) ---
+                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasResumen}) ┃ AVG: ${avgElo}`);
+                
+                // Agregamos un pequeño timeout para que Twitch no los bloquee por spam
+                setTimeout(() => {
+                    client.say(channel, `ALIADOS: ${misAliados}`);
+                }, 500);
+                
+                setTimeout(() => {
+                    client.say(channel, `RIVALES: ${misRivales}`);
+                }, 1000);
 
             } catch (e) {
                 client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !match.");
