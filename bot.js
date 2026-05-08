@@ -175,27 +175,32 @@ client.on('message', async (channel, tags, message, self) => {
     try {
         const cluster = getCluster(config.region);
 
-        if (command === '!rank') {
+        if (command === '!stats' || command === '!hoy' || command === '!rank') {
             const soloQ = await updateStats(channelName);
-            if (!soloQ) return client.say(channel, "Sin rango");
+            if (!soloQ) return client.say(channel, "Sin datos de Ranked SoloQ.");
+
+            // 1. Cálculos de Stats del día
+            const w = soloQ.wins - config.startWins;
+            const l = soloQ.losses - config.startLosses;
+            const currentEloTotal = calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints);
+            const startEloTotal = calculateTotalElo(config.startTier, config.startRank, config.startLP);
+            const lpDiff = currentEloTotal - startEloTotal;
+            const wr = (w + l) > 0 ? ((w / (w + l)) * 100).toFixed(0) : 0;
+
+            // 2. Cálculos de Rango y Progreso
             const isApex = ['MASTER', 'GRANDMASTER', 'CHALLENGER'].includes(soloQ.tier.toUpperCase());
+            let metaInfo = "";
+
             if (isApex) {
-                client.say(channel, `${config.name}: ${soloQ.tier} ${soloQ.leaguePoints} LP`);
+                metaInfo = `${soloQ.tier} ${soloQ.leaguePoints} LP`;
             } else {
                 const lpParaSubir = 100 - soloQ.leaguePoints;
                 const meta = soloQ.rank === "I" ? getNextTier(soloQ.tier) : `${soloQ.tier} ${getNextRank(soloQ.rank)}`;
-                client.say(channel, `${config.name}: ${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP). Faltan ${lpParaSubir} LP para ${meta}`);
+                metaInfo = `${soloQ.tier} ${soloQ.rank} (${soloQ.leaguePoints} LP) ┃ Faltan ${lpParaSubir} LP para ${meta}`;
             }
-        }
 
-        if (command === '!stats' || command === '!hoy') {
-            const soloQ = await updateStats(channelName);
-            if (!soloQ) return client.say(channel, "Sin datos");
-            const w = soloQ.wins - config.startWins;
-            const l = soloQ.losses - config.startLosses;
-            const lpDiff = calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) - calculateTotalElo(config.startTier, config.startRank, config.startLP);
-            const wr = (w + l) > 0 ? ((w / (w + l)) * 100).toFixed(0) : 0;
-            client.say(channel, `Hoy: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) | WR: ${wr}%`);
+            // 3. Mensaje Unificado
+            client.say(channel, `HOY: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) ┃ WR: ${wr}% ┃ ${metaInfo}`);
         }
 
         if (command === '!match') {
