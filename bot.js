@@ -209,99 +209,63 @@ client.on('message', async (channel, tags, message, self) => {
             // 3. Mensaje Unificado
             client.say(channel, `HOY: ${w}W - ${l}L (${lpDiff >= 0 ? "+" : ""}${lpDiff} LP) ┃ WR: ${wr}% ┃ ${metaInfo}`);
         }
+    if (command === '!match') {
+    try {
+        if (!config.puuid) await updateStats(channelName);
 
-        if (command === '!match') {
+        const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
+        const activeResponse = await riotRequest.get(url);
+        const liveData = activeResponse.data;
+
+        const runasMapShort = {
+            8000: "Precisión", 8100: "Dominación", 8200: "Brujería", 8300: "Inspiración", 8400: "Valor",
+            8005: "Ataque", 8008: "Lethal", 8010: "Conq", 8021: "Fleet", 8112: "Electro",
+            8124: "Predator", 8128: "DH", 9923: "HoB", 8214: "Aery", 8229: "Cometa",
+            8230: "Fase", 8437: "Garras", 8439: "Aftershock", 8351: "Glacial", 8360: "Libro", 8369: "FirstStrike"
+        };
+
+        const me = liveData.participants.find(p => p.puuid === config.puuid);
+        const runasResumen = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
+
+        const playerDetails = await Promise.all(liveData.participants.map(async (p) => {
             try {
-                if (!config.puuid) await updateStats(channelName);
-
-                const url = `https://${config.region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${config.puuid}`;
-                const activeResponse = await riotRequest.get(url);
-                const liveData = activeResponse.data;
-
-                // Mapeo rápido para el prefijo de runas en !match
-              const runasMapShort = {
-    // --- RAMAS PRINCIPALES ---
-    8000: "Precisión", 
-    8100: "Dominación", 
-    8200: "Brujería", 
-    8300: "Inspiración", 
-    8400: "Valor",
-
-    // --- RUNAS CLAVE ---
-    // Precisión
-    8005: "Ataque Intensificado", 
-    8008: "Compás Letal", 
-    8010: "Conquistador", 
-    8021: "Sobre la Marcha", 
-    
-    // Dominación
-    8112: "Electrocutar", 
-    8124: "Depredador", 
-    8128: "Cosecha Oscura", 
-    9923: "Lluvia de Cuchillas", 
-    
-    // Brujería
-    8214: "Invocar a Aery", 
-    8229: "Cometa Arcano", 
-    8230: "Irrupción de Fase", 
-    
-    // Valor
-    8437: "Garras del Inmortal", 
-    8439: "Reverberación", 
-    8465: "Protector", 
-    
-    // Inspiración
-    8351: "Aumento Glacial", 
-    8360: "Libro de Hechizos", 
-    8369: "Primer Golpe"
-};
-                const me = liveData.participants.find(p => p.puuid === config.puuid);
-                const runasResumen = `${runasMapShort[me.perks.perkIds[0]] || "Runa"} + ${runasMapShort[me.perks.perkSubStyle] || "Sec"}`;
-
-                // Obtenemos los detalles de los 10 jugadores
-                const playerDetails = await Promise.all(liveData.participants.map(async (p) => {
-                    try {
-                        const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
-                        const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
-                        return {
-                            name: p.riotIdGameName || "Anon",
-                            champ: champMap[p.championId] || "Champ",
-                            team: p.teamId,
-                            eloNum: soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null,
-                            eloTxt: soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "UNR",
-                            isSmite: p.spell1Id === 11 || p.spell2Id === 11,
-                            puuid: p.puuid
-                        };
-                    } catch (e) {
-                        return { name: p.riotIdGameName || "Anon", champ: champMap[p.championId] || "Champ", team: p.teamId, eloNum: null, eloTxt: "???", isSmite: false, puuid: p.puuid };
-                    }
-                }));
-
-                const elosValidos = playerDetails.map(p => p.eloNum).filter(v => v !== null);
-                const avgElo = calculateAvgFromElos(elosValidos);
-
-                const sortTeam = (teamId) => playerDetails.filter(p => p.team === teamId).sort((a, b) => b.isSmite - a.isSmite);
-                const formatPlayer = (p) => `${p.name}(${p.champ} ${p.eloTxt})`;
-
-                const misAliados = sortTeam(me.teamId).filter(p => p.puuid !== me.puuid).map(formatPlayer).join(", ");
-                const misRivales = sortTeam(me.teamId === 100 ? 200 : 100).map(formatPlayer).join(", ");
-
-                // --- ENVIAR MENSAJES (Separados para evitar cortes) ---
-                client.say(channel, `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasResumen}) ┃ AVG: ${avgElo}`);
-                
-                // Agregamos un pequeño timeout para que Twitch no los bloquee por spam
-                setTimeout(() => {
-                    client.say(channel, `ALIADOS: ${misAliados}`);
-                }, 500);
-                
-                setTimeout(() => {
-                    client.say(channel, `RIVALES: ${misRivales}`);
-                }, 1000);
-
+                const res = await riotRequest.get(`https://${config.region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${p.puuid}`);
+                const soloQ = res.data.find(l => l.queueType === 'RANKED_SOLO_5x5');
+                return {
+                    name: p.riotIdGameName || "Anon",
+                    champ: champMap[p.championId] || "Champ",
+                    team: p.teamId,
+                    eloNum: soloQ ? calculateTotalElo(soloQ.tier, soloQ.rank, soloQ.leaguePoints) : null,
+                    eloTxt: soloQ ? `${soloQ.tier.charAt(0)}${soloQ.rank}` : "UNR",
+                    isSmite: p.spell1Id === 11 || p.spell2Id === 11,
+                    puuid: p.puuid
+                };
             } catch (e) {
-                client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !match.");
+                return { name: "Anon", champ: "Champ", team: p.teamId, eloNum: null, eloTxt: "???", isSmite: false };
             }
-        }
+        }));
+
+        const elosValidos = playerDetails.map(p => p.eloNum).filter(v => v !== null);
+        const avgElo = calculateAvgFromElos(elosValidos);
+
+        const formatPlayer = (p) => `${p.name}(${p.champ} ${p.eloTxt})`;
+        
+        const aliados = playerDetails.filter(p => p.team === me.teamId && p.puuid !== me.puuid)
+            .sort((a, b) => b.isSmite - a.isSmite).map(formatPlayer).join(", ");
+        
+        const rivales = playerDetails.filter(p => p.team !== me.teamId)
+            .sort((a, b) => b.isSmite - a.isSmite).map(formatPlayer).join(", ");
+
+        // UN SOLO MENSAJE COMPACTO
+        const mensajeFinal = `[PARTIDA] ${config.name}: ${champMap[me.championId]} (${runasResumen}) ┃ AVG: ${avgElo} ┃ ALIADOS: ${aliados} ┃ RIVALES: ${rivales}`;
+
+        client.say(channel, mensajeFinal);
+
+    } catch (e) {
+        client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !match.");
+    }
+}
+       
        if (command === '!lastmatch' || command === '!ultimogame') {
             try {
                 if (!config.puuid) await updateStats(channelName);
