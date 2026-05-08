@@ -295,7 +295,7 @@ client.on('message', async (channel, tags, message, self) => {
                 const dmg = (p.totalDamageDealtToChampions / durationMins).toFixed(0);
 
                 // --- UNIFICACIÓN EN UN SOLO MENSAJE ---
-                const mensajeCompleto = `[ÚLTIMA] ${avgEloText}: ${p.win ? 'V' : 'D'} con ${p.championName} (${p.kills}/${p.deaths}/${p.assists}) | CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) | Daño/m: ${dmg} | RUNAS: ${clave} (${rPrincipal}) + (${rSecundaria})`;
+                const mensajeCompleto = `[${avgEloText}] ${p.win ? 'Victoria' : 'Derrota'} con ${p.championName} (${p.kills}/${p.deaths}/${p.assists}) | CS: ${cs} (${(cs/durationMins).toFixed(1)}/m) | Daño/m: ${dmg} ➜ RUNAS: ${clave} (${rPrincipal}) + (${rSecundaria})`;
 
                 client.say(channel, mensajeCompleto);
 
