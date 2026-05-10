@@ -368,23 +368,32 @@ if (command === '!bans') {
         client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !runas.");
     }
 }
+    if (command.startsWith('!insulto')) {
+    // 1. Definimos los insultos por canal
+    const insultosPersonalizados = {
+        '#marquez25': [
+            "Tienes menos daños que el jhin support de shake",
+            "Eres tan confiable como la lilia de marquez",
+            "Tener menos elo que marquez parece imposible, y aun así tu lo has conseguido",
+            "Da igual que linea juegues porque marquez lo hace mejor que tu",
+            "Tienes menos impacto que un K'Sante en las manos de Marquez.",
+            "Eres más lento que Marquez smiteando un objetivo",
+            "Tiras más la partida que Trollquez cuando se cree que va 1vs9",
+            "Tu winrate es más bajo que la moral de Marquez después de una losingQ"
+        
+            
+        ],
+    };
+    // 2. Obtenemos la lista del canal actual (si no existe, una por defecto)
+    const listaActual = insultosPersonalizados[channel] || ["Eres un bot."];
+    // 3. Elegimos uno al azar de ESA lista
+    const insultoRandom = listaActual[Math.floor(Math.random() * listaActual.length)];
+        const args = message.split(' ');
+    // Si no mencionan a nadie, el objetivo es el dueño del canal
+    let target = args[1] ? args[1] : `@${channel.replace('#', '')}`; 
 
-        if (command.startsWith('!insulto')) {
-            const poolInsultos = [
-                "eres más lento que un Nautilus con lag.",
-                "tienes menos puntería que un Minion.",
-                "¿tu teclado solo tiene la tecla de morir?",
-                "eres más inútil que el flash de un Shaco.",
-                "hasta el Escurridizo del río farmea mejor que tú.",
-                "tu KDA parece el número de emergencias.",
-                "te falta más visión que a Lee Sin.",
-                "eres el motivo por el cual el surrender existe."
-            ];
-            const insultoRandom = poolInsultos[Math.floor(Math.random() * poolInsultos.length)];
-            const args = message.split(' ');
-            let target = args[1] ? args[1] : `@${config.name}`;
-            client.say(channel, `${target}, ${insultoRandom}`);
-        }
+    client.say(channel, `${target}, ${insultoRandom}`);
+}
         if (command === '!comandos') {
             client.say(channel, `Los comandos disponibles son: !insulto, !match, !lastmatch, !stats, !perks, !bans`);
         }
