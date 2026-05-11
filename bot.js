@@ -426,7 +426,7 @@ if (command.startsWith('!boda') || command.startsWith('!love')) {
     } else if (percent < 30) {
         respuesta = "Estás en la friendzone y de ahí no te saca ni un carrito de Marquez.";
     } else if (percent < 85) {
-        respuesta = "Deberías escribirle un privado a ${target} para conoceros mejor, ¿no?";
+        respuesta = "Deberías escribirle un privado para conoceros mejor, ¿no?";
     } else {
         respuesta = "Ni Romeo y Julieta se querian tanto.";
     }
