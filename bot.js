@@ -431,7 +431,7 @@ if (command.startsWith('!boda') || command.startsWith('!love')) {
         respuesta = "Ni Romeo y Julieta se querian tanto.";
     }
 
-    client.say(channel, `/me ${sender} + ${target} = ${percent}% ┃ ${respuesta}`);
+    client.say(channel, `/me ${sender} tienes un ${percent}% con ${target} ┃ ${respuesta}`);
 }
 if (command.startsWith('!iq')) {
     const args = message.split(' ');
