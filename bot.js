@@ -346,26 +346,45 @@ if (command === '!bans') {
         const response = await riotRequest.get(url);
         const me = response.data.participants.find(p => p.puuid === config.puuid);
 
-        // Mapeamos los IDs de las runas que Riot SI nos deje ver
-        const nombres = me.perks.perkIds.map(id => runasCompletasMap[id] || `ID:${id}`);
+        // Obtenemos todos los nombres del mapa
+        const allRunes = me.perks.perkIds.map(id => runasCompletasMap[id]).filter(Boolean);
         
-        const clave = nombres[0] || "Desconocida";
-        // Aquí usamos perkStyle y perkSubStyle para que nunca salga vacío
+        // Runa Clave (Siempre es la primera)
+        const clave = allRunes[0] || "Desconocida";
+        
+        // Ramas
         const ramaPrincipal = runasCompletasMap[me.perks.perkStyle] || "Principal";
         const ramaSecundaria = runasCompletasMap[me.perks.perkSubStyle] || "Secundaria";
 
-        // Limpiamos los datos para que no salgan comas feas si faltan IDs
-        const menores = nombres.slice(1, 4).filter(n => n && !n.includes("ID:")).join(", ");
-        const secundarias = nombres.slice(4, 6).filter(n => n && !n.includes("ID:")).join(", ");
+        // Filtramos para sacar las runas menores de la rama principal (posiciones 1, 2, 3 del array)
+        const principalesMenores = allRunes.slice(1, 4).join(", ");
+        
+        // Filtramos para sacar las 2 de la rama secundaria
+        const secundarias = allRunes.slice(4, 6).join(", ");
 
-        let msg = `[RUNAS] ${config.name}: ${clave} (${ramaPrincipal}`;
-        if (menores) msg += `: ${menores}`;
-        msg += `) ┃ Sec: ${ramaSecundaria}`;
-        if (secundarias) msg += `: ${secundarias}`;
+        // Filtramos las últimas 3 que siempre son los Shards (Fuerza, Armadura, etc)
+        const shards = allRunes.slice(-3).join(" / ");
+
+        // --- CONSTRUCCIÓN DEL MENSAJE ÚTIL ---
+        let msg = `[RUNAS] ${config.name}: ${clave} ┃ ${ramaPrincipal}: ${principalesMenores}`;
+        
+        if (secundarias) {
+            msg += ` ┃ ${ramaSecundaria}: ${secundarias}`;
+        }
+        
+        if (shards) {
+            msg += ` ┃ Shards: ${shards}`;
+        }
 
         client.say(channel, msg);
+
     } catch (e) {
-        client.say(channel, e.response && e.response.status === 404 ? `${config.name} no está en partida.` : "Error en !runas.");
+        if (e.response && e.response.status === 404) {
+            client.say(channel, `${config.name} no está en partida.`);
+        } else {
+            console.log(e);
+            client.say(channel, "Error al obtener las runas. Puede que Riot aún no las haya cargado.");
+        }
     }
 }
     if (command.startsWith('!insulto')) {
@@ -379,9 +398,10 @@ if (command === '!bans') {
             "Tienes menos impacto que un K'Sante en las manos de Marquez.",
             "Eres más lento que Marquez smiteando un objetivo",
             "Tiras más la partida que Trollquez cuando se cree que va 1vs9",
-            "Tu winrate es más bajo que la moral de Marquez después de una losingQ"
-        
-            
+            "Tu winrate es más bajo que la moral de Marquez después de una losingQ",
+            "Eres más viejo que Marquez y mira que el ya tiene 80 años cotizados",
+            "¿No hablas mucho? Ni Speaker25 da tanto discurso",
+            "Eres tan fan de Marquez como mack que se vio 12h de directo para irse con una lose"
         ],
     };
     // 2. Obtenemos la lista del canal actual (si no existe, una por defecto)
@@ -394,9 +414,38 @@ if (command === '!bans') {
 
     client.say(channel, `${target}, ${insultoRandom}`);
 }
-        if (command === '!comandos') {
-            client.say(channel, `Los comandos disponibles son: !insulto, !match, !lastmatch, !stats, !perks, !bans`);
-        }
+if (command.startsWith('!boda') || command.startsWith('!love')) {
+    const args = message.split(' ');
+    const sender = `@${tags['display-name']}`;
+    const target = args[1] ? args[1] : `@${channel.replace('#', '')}`;
+    const percent = Math.floor(Math.random() * 100) + 1;
+
+    client.say(channel, `/me ${sender} tiene un ${percent}% de casarse con ${target}, espero que nos inviten a la boda! 💍`);
+}
+if (command.startsWith('!iq')) {
+    const args = message.split(' ');
+    const sender = `@${tags['display-name']}`;
+    const target = args[1] ? args[1] : sender;
+    const iq = Math.floor(Math.random() * 201);
+
+    let comentario = "";
+    if (iq < 50) {
+        comentario = "Tiene la inteligencia de un mono.";
+    } else if (iq < 85) {
+        comentario = "Se le olvida respirar si no se lo recuerdan.";
+    } else if (iq < 115) {
+        comentario = "Un humano promedio, sin más.";
+    } else if (iq < 150) {
+        comentario = "Ojo, que sabe leer y todo.";
+    } else {
+        comentario = "Cuidado, tenemos a un futuro Faker en el chat.";
+    }
+
+    client.say(channel, `🧠 El IQ de ${target} es de ${iq}. ${comentario}`);
+}
+if (command === '!comandos') {
+    client.say(channel, `Los comandos disponibles son: !insulto, !match, !lastmatch, !stats, !perks, !bans, !boda, !iq`);
+}
             
 
     } catch (err) { console.error("Error", err.message); }
