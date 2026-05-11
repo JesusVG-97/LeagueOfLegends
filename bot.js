@@ -418,9 +418,20 @@ if (command.startsWith('!boda') || command.startsWith('!love')) {
     const args = message.split(' ');
     const sender = `@${tags['display-name']}`;
     const target = args[1] ? args[1] : `@${channel.replace('#', '')}`;
-    const percent = Math.floor(Math.random() * 100) + 1;
+    const percent = Math.floor(Math.random() * 101);
 
-    client.say(channel, `/me ${sender} tiene un ${percent}% de casarse con ${target}, espero que nos inviten a la boda! 💍`);
+    let respuesta = "";
+    if (percent < 10) {
+        respuesta = "Es más fácil que Marquez suba a Challenger a que tú tengas algo con ${target}.";
+    } else if (percent < 30) {
+        respuesta = "Estás en la friendzone y de ahí no te saca ni un carrito de Marquez.";
+    } else if (percent < 85) {
+        respuesta = "Deberías escribirle un privado a ${target} para conoceros mejor, ¿no?";
+    } else {
+        respuesta = "Ni Romeo y Julieta se querian tanto.";
+    }
+
+    client.say(channel, `/me ${sender} + ${target} = ${percent}% ┃ ${respuesta}`);
 }
 if (command.startsWith('!iq')) {
     const args = message.split(' ');
