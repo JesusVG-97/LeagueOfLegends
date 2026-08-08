@@ -438,7 +438,33 @@ client.on('message', async (channel, tags, message, self) => {
 
             client.say(channel, `🧠 El IQ de ${target} es de ${iq}. ${comentario}`);
         }
+        if (command.startsWith('!altura') || command.startsWith('!height')) {
+            const args = message.split(' ');
+            const sender = `@${tags['display-name']}`;
+            const target = args[1] ? args[1] : sender;
+            
+            // Genera una altura entre 1 cm y 210 cm
+            const altura = Math.floor(Math.random() * 210) + 1; 
 
+            let comentario = "";
+            if (altura < 131) {
+                comentario = "Mides menos que el gnomito de Peralton.";
+            } else if (altura === 131) {
+                comentario = "Mides lo mismo que el gnomito de Peralton.";
+            } else if (altura < 155) {
+                comentario = "Estas pequeñito pero no tanto como Peralton";
+            } else if (altura < 170) {
+                comentario = "Ni subiéndote a los hombros de Peralton llegas al metro ochenta.";
+            } else if (altura < 185) {
+                comentario = "Le sacas dos cabezas al ego de Peralton cuando pierde.";
+            } else if (altura < 198) {
+                comentario = "Estatura perfecta para hacerle un tapón a Peralton en la vida y en el LoL.";
+            } else {
+                comentario = "Desde ahí arriba seguro que Peralton te confunde con Goliath.";
+            }
+
+            client.say(channel, `📏 La altura de ${target} es de ${altura} cm. ${comentario}`);
+        }
         if (command === '!comandos') {
             client.say(channel, `Los comandos disponibles son: !insulto, !match, !lastmatch, !stats, !perks, !bans, !boda, !iq`);
         }
