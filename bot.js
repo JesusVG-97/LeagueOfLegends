@@ -41,7 +41,7 @@ const runasCompletasMap = {
 // --- CONFIGURACIÓN DE STREAMERS ---
 const streamerAccounts = {
     "xuclacubatas": { name: "XuclaCubatas", tag: "ESP", region: "euw1", delayMs: 0, cooldownMs: 3000, startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
-    "marquez25": { name: "Manquez 25", tag: "PLATA", region: "euw1", delayMs: 0, cooldownMs: 3000, startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
+    "marquez25": { name: "Marquez 25", tag: "EUW", region: "euw1", delayMs: 0, cooldownMs: 3000, startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" },
     "peraltone": { name: "MINIPEKKA", tag: "SOLOQ", region: "euw1", delayMs: 2000, cooldownMs: 300000, startWins: 0, startLosses: 0, startLP: 0, startTier: "", startRank: "", puuid: "" }
 };
 
